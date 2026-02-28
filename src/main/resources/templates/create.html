@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo thực đơn theo sở thích</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/create_meal.css">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">BMI Meal Planner</div>
+    <div class="nav-menu">
+        <a>Thông tin cá nhân</a>
+        <a>Thực đơn của tôi</a>
+        <a>Thực đơn mẫu</a>
+        <a class="logout">Đăng xuất</a>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+    <h1>Tạo thực đơn theo sở thích</h1>
+
+    <div class="controls">
+        <div class="meal-tabs">
+            <button class="active">Sáng</button>
+            <button>Trưa</button>
+            <button>Tối</button>
+        </div>
+
+        <div class="calo-input">
+             Calo mục tiêu:
+            <input type="number" placeholder="VD: 500">
+        </div>
+    </div>
+
+    <div class="table-box">
+        <table id="mealTable">
+            <tr>
+                <th>Thực phẩm</th>
+                <th>Định lượng (g)</th>
+                <th>Calo</th>
+                <th>Thao tác</th>
+            </tr>
+        </table>
+
+        <div class="add-row">
+            <button>+</button>
+        </div>
+    </div>
+
+    <!-- SAVE -->
+    <div class="save-template">
+        <button>➕ Thêm vào thực đơn mẫu</button>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="foodModal">
+    <div class="modal-content">
+        <h3>➕ Thêm thực phẩm</h3>
+
+        <select id="foodSelect">
+            <!-- Will be populated by JS -->
+        </select>
+
+        <input type="number" id="quantity" placeholder="Định lượng (g)">
+
+        <button id="addFoodBtn">Thêm</button>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/create_meal.js"></script>
+
+</body>
+</html>

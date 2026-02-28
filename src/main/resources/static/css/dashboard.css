@@ -1,0 +1,93 @@
+/* ============================================
+   DASHBOARD PAGE STYLES
+   ============================================ */
+
+.welcome {
+  background: linear-gradient(135deg, #fde2e4, #fff1f2);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 40px;
+  animation: fadeIn 0.6s;
+}
+
+.welcome h1 {
+  margin: 0 0 8px;
+  color: #9f1239;
+  font-size: 32px;
+}
+
+.welcome p {
+  margin: 0;
+  color: #555;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+
+.feature-card h2 {
+  margin-top: 0;
+  color: #be123c;
+  font-size: 24px;
+}
+
+.feature-card p {
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.feature-card button {
+  padding: 12px 20px;
+  background: #ec4899;
+  border: none;
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.feature-card button:hover {
+  background: #db2777;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.35);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .welcome {
+    padding: 24px;
+  }
+
+  .welcome h1 {
+    font-size: 24px;
+  }
+
+  .feature-card {
+    padding: 24px;
+  }
+}

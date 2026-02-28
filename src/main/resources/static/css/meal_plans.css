@@ -1,0 +1,147 @@
+/* ============================================
+   MEAL PLANS PAGE STYLES
+   ============================================ */
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #9f1239;
+}
+
+.custom-btn {
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(236,72,153,0.35);
+  transition: all 0.3s;
+}
+
+.custom-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(236,72,153,0.45);
+}
+
+/* ===== MEAL ROW ===== */
+.meal-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  background: white;
+  border-radius: 20px;
+  margin-bottom: 32px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+}
+
+.meal-row:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+
+.meal-info {
+  padding: 32px;
+}
+
+.meal-info h2 {
+  margin-top: 0;
+  color: #be123c;
+  font-size: 24px;
+}
+
+.meal-info p {
+  color: #555;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+
+.macro {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.macro span {
+  background: #ffe4e6;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #9f1239;
+  font-weight: 600;
+  transition: transform 0.3s;
+}
+
+.macro span:hover {
+  transform: scale(1.05);
+}
+
+.view-btn {
+  margin-top: 16px;
+  padding: 12px 22px;
+  background: #ec4899;
+  border: none;
+  color: white;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.view-btn:hover {
+  background: #db2777;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.35);
+}
+
+/* ===== IMAGE ===== */
+.meal-image {
+  background: linear-gradient(135deg, #fde2e4, #fff1f2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  transition: transform 0.3s;
+  overflow: hidden;
+  position: relative;
+}
+
+.meal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s;
+}
+
+.meal-row:hover .meal-image img {
+  transform: scale(1.1);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 968px) {
+  .header-row {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .meal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-image {
+    min-height: 200px;
+  }
+}

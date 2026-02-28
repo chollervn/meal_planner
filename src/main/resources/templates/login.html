@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Meal Planner - Login</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+
+<body>
+
+<!-- LEFT SIDE -->
+<div class="left">
+    <div class="left-card">
+        <h1>BMI Meal Planner</h1>
+        <p>
+            Xây dựng thực đơn cá nhân hoá dựa trên chỉ số BMI.
+            Giúp bạn ăn uống khoa học, kiểm soát cân nặng
+            và hướng đến lối sống lành mạnh mỗi ngày.
+        </p>
+
+        <div class="feature">
+            <div class="icon">🥗</div>
+            Gợi ý thực đơn theo chỉ số cơ thể
+        </div>
+
+        <div class="feature">
+            <div class="icon">📊</div>
+            Theo dõi calo & dinh dưỡng rõ ràng
+        </div>
+
+        <div class="feature">
+            <div class="icon">💗</div>
+            Phù hợp mọi mục tiêu sức khoẻ
+        </div>
+    </div>
+</div>
+
+<!-- RIGHT SIDE -->
+<div class="right">
+    <div class="auth-card">
+        <h2>Đăng nhập</h2>
+        <p>Chào mừng bạn quay lại!</p>
+
+        <div id="loginMessages"></div>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Mật khẩu" required>
+
+            <button type="submit">Đăng nhập</button>
+
+            <div class="switch">
+                Chưa có tài khoản?
+                <a id="switchToRegister">Đăng ký</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/auth.js"></script>
+
+</body>
+</html>

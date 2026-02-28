@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản lý người dùng</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">BMI Meal Planner - Admin</div>
+    <div class="nav-menu">
+        <a>Dashboard</a>
+        <a>Người dùng</a>
+        <a>Thực đơn</a>
+        <a class="logout">Đăng xuất</a>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+    <h1>👑 Quản lý người dùng</h1>
+
+    <!-- STATS -->
+    <div class="stats">
+        <div class="stat-card">
+            <h3>Tổng người dùng</h3>
+            <p>128</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Thực đơn đã áp dụng</h3>
+            <p>842</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Thực đơn phổ biến nhất</h3>
+            <p>Giảm cân</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>User hoạt động tuần này</h3>
+            <p>76</p>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-box">
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Email</th>
+                <th>Tuổi</th>
+                <th>BMI</th>
+                <th>Thực đơn đã dùng</th>
+                <th>Thực đơn hay dùng</th>
+                <th>Chi tiết</th>
+            </tr>
+
+            <tr>
+                <td>1</td>
+                <td>Nguyễn Văn A</td>
+                <td>a@gmail.com</td>
+                <td>22</td>
+                <td><span class="badge badge-normal">Bình thường</span></td>
+                <td>12</td>
+                <td>Giảm cân</td>
+                <td><button class="view-btn">Xem</button></td>
+            </tr>
+
+            <tr>
+                <td>2</td>
+                <td>Trần Thị B</td>
+                <td>b@gmail.com</td>
+                <td>25</td>
+                <td><span class="badge badge-over">Thừa cân</span></td>
+                <td>18</td>
+                <td>Duy trì</td>
+                <td><button class="view-btn">Xem</button></td>
+            </tr>
+
+            <tr>
+                <td>3</td>
+                <td>Lê Văn C</td>
+                <td>c@gmail.com</td>
+                <td>20</td>
+                <td><span class="badge badge-under">Thiếu cân</span></td>
+                <td>9</td>
+                <td>Tăng cân</td>
+                <td><button class="view-btn">Xem</button></td>
+            </tr>
+
+        </table>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,253 @@
+/* ============================================
+   LOGIN & REGISTER PAGE STYLES
+   ============================================ */
+
+body {
+  height: 100vh;
+  display: flex;
+  background: #f8fafc;
+}
+
+/* ===== LEFT SIDE ===== */
+.left {
+  width: 50%;
+  background: linear-gradient(135deg, #fde2e4, #fff1f2);
+  padding: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.left-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 48px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  max-width: 520px;
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.left h1 {
+  font-size: 40px;
+  margin-bottom: 16px;
+  color: #be123c;
+}
+
+.left p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #444;
+  margin-bottom: 32px;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+  font-size: 16px;
+  color: #333;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.feature:nth-child(4) { animation-delay: 0.1s; }
+.feature:nth-child(5) { animation-delay: 0.2s; }
+.feature:nth-child(6) { animation-delay: 0.3s; }
+
+.icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffe4e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  font-size: 20px;
+  transition: transform 0.3s;
+}
+
+.feature:hover .icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* ===== RIGHT SIDE ===== */
+.right {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-card {
+  width: 380px;
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  animation: slideInRight 0.6s ease-out;
+}
+
+.auth-card h2 {
+  margin-bottom: 8px;
+  color: #be123c;
+}
+
+.auth-card p {
+  margin-bottom: 24px;
+  color: #666;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.auth-card input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 12px;
+  background: #ec4899;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.auth-card button:hover {
+  background: #db2777;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.35);
+}
+
+.auth-card button:active {
+  transform: translateY(0);
+}
+
+.switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.switch a {
+  color: #ec4899;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.switch a:hover {
+  color: #db2777;
+  text-decoration: underline;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: none;
+}
+
+.error-message.active {
+  display: block;
+  animation: shake 0.5s;
+}
+
+.success-message {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: none;
+}
+
+.success-message.active {
+  display: block;
+  animation: slideDown 0.5s;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 968px) {
+  body {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .left, .right {
+    width: 100%;
+  }
+
+  .left {
+    padding: 40px 24px;
+  }
+
+  .left-card {
+    max-width: 100%;
+  }
+
+  .right {
+    padding: 40px 24px;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 380px;
+  }
+}

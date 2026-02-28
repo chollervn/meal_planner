@@ -1,0 +1,104 @@
+/* ============================================
+   MEAL DETAIL PAGE STYLES
+   ============================================ */
+
+.container h1 {
+  color: #9f1239;
+  margin-bottom: 32px;
+}
+
+/* ===== MEAL BLOCK ===== */
+.meal-block {
+  background: white;
+  border-radius: 20px;
+  margin-bottom: 32px;
+  padding: 32px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  transition: all 0.3s;
+}
+
+.meal-block:hover {
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+
+.meal-title {
+  font-size: 22px;
+  color: #be123c;
+  margin: 0 0 16px;
+}
+
+.meal-summary {
+  display: flex;
+  gap: 14px;
+  margin: 12px 0 16px;
+  flex-wrap: wrap;
+}
+
+.meal-summary span {
+  background: #ffe4e6;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9f1239;
+  transition: transform 0.3s;
+}
+
+.meal-summary span:hover {
+  transform: scale(1.05);
+}
+
+.image-box {
+  background: linear-gradient(135deg, #fde2e4, #fff1f2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.image-box span {
+  font-size: 90px;
+  transition: transform 0.3s;
+}
+
+.image-box:hover span {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+  padding: 0 16px;
+  font-style: italic;
+}
+
+/* ===== DAILY SUMMARY ===== */
+.summary {
+  background: linear-gradient(135deg, #ffe4e6, #fff1f2);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+}
+
+.summary h2 {
+  color: #9f1239;
+  margin-top: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 968px) {
+  .meal-block {
+    grid-template-columns: 1fr;
+  }
+
+  .image-box {
+    min-height: 200px;
+  }
+}

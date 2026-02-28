@@ -1,0 +1,157 @@
+/* ============================================
+   CREATE MEAL PAGE STYLES
+   ============================================ */
+
+.container h1 {
+  color: #9f1239;
+  margin-bottom: 24px;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.meal-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.meal-tabs button {
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: 1px solid #ec4899;
+  background: white;
+  color: #be123c;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.meal-tabs button:hover {
+  background: #fdf2f8;
+}
+
+.meal-tabs button.active {
+  background: #ec4899;
+  color: white;
+}
+
+.calo-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-weight: 600;
+}
+
+.calo-input input {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  width: 160px;
+}
+
+/* ===== TABLE BOX ===== */
+.table-box {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.add-row {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.add-row button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #ec4899;
+  color: white;
+  font-size: 26px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.add-row button:hover {
+  background: #db2777;
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.35);
+}
+
+/* ===== SAVE BUTTON ===== */
+.save-template {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-template button {
+  padding: 14px 28px;
+  background: #be123c;
+  color: white;
+  border: none;
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(190,18,60,0.3);
+  transition: all 0.3s;
+}
+
+.save-template button:hover {
+  background: #9f1239;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(190,18,60,0.4);
+}
+
+/* ===== DELETE BUTTON IN TABLE ===== */
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 968px) {
+  .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meal-tabs {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .calo-input {
+    width: 100%;
+  }
+
+  .calo-input input {
+    flex: 1;
+  }
+}
