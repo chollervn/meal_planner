@@ -63,6 +63,31 @@
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35);
 }
 
+.admin-user-detail-modal {
+  max-width: 560px;
+}
+
+.admin-user-detail-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fff1f2;
+}
+
+.detail-label {
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.admin-user-detail-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .stats {
@@ -77,5 +102,10 @@
 
   .table-box {
     overflow-x: auto;
+  }
+
+  .admin-user-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }

@@ -26,6 +26,58 @@
   gap: 12px;
 }
 
+.meal-name-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 260px;
+}
+
+.meal-name-box label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9f1239;
+}
+
+.meal-name-box input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fecdd3;
+}
+
+.calorie-box {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #9f1239;
+  min-width: 260px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selected-food-calories {
+  margin: 8px 0 0;
+  color: #9f1239;
+  font-size: 13px;
+}
+
+.manage-foods-btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #be123c;
+  background: #fff1f2;
+  color: #9f1239;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.manage-foods-btn:hover {
+  background: #ffe4e6;
+}
+
 .meal-tabs button {
   padding: 10px 18px;
   border-radius: 20px;
@@ -135,6 +187,85 @@
   transform: scale(1.05);
 }
 
+.food-library-content {
+  width: min(980px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.food-library-tools {
+  margin: 10px 0 14px;
+}
+
+.food-library-tools input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fecdd3;
+}
+
+.food-library-table-wrap {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #ffe4e6;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+#foodLibraryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#foodLibraryTable th,
+#foodLibraryTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ffe4e6;
+  text-align: left;
+}
+
+#foodLibraryTable th {
+  background: #fff1f2;
+  position: sticky;
+  top: 0;
+}
+
+.food-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.food-form-grid input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fecdd3;
+}
+
+.food-library-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+
+.food-library-actions button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#saveFoodBtn {
+  background: #be123c;
+  color: #fff;
+}
+
+.food-library-actions .close-btn {
+  background: #f3f4f6;
+  color: #111827;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 968px) {
   .controls {
@@ -147,11 +278,29 @@
     flex-wrap: wrap;
   }
 
+  .manage-foods-btn {
+    width: 100%;
+  }
+
+  .meal-name-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .calorie-box {
+    width: 100%;
+    min-width: 0;
+  }
+
   .calo-input {
     width: 100%;
   }
 
   .calo-input input {
     flex: 1;
+  }
+
+  .food-form-grid {
+    grid-template-columns: 1fr;
   }
 }

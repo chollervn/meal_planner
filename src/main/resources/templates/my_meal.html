@@ -28,88 +28,20 @@
         <h1>📅 Lịch áp thực đơn</h1>
 
         <div class="controls">
-            <select>
-                <option>2026</option>
-                <option>2025</option>
-            </select>
+            <select id="yearSelect" aria-label="Chọn năm"></select>
 
-            <select>
-                <option>Tháng 1</option>
-                <option>Tháng 2</option>
-                <option>Tháng 3</option>
-            </select>
+            <select id="monthSelect" aria-label="Chọn tháng"></select>
 
-            <button>◀ Tuần trước</button>
-            <button>Tuần sau ▶</button>
+            <button id="prevWeekBtn" type="button">◀ Tuần trước</button>
+            <button id="nextWeekBtn" type="button">Tuần sau ▶</button>
         </div>
     </div>
 
     <!-- CALENDAR GRID -->
-    <div class="calendar">
-
-        <div class="day">
-            <h3>Thứ 2<br><small>05/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-        <div class="day has-meal">
-            <h3>Thứ 3<br><small>06/01</small></h3>
-
-            <div class="meal-card">
-                <span class="meal-calories">🔥 1500 kcal</span>
-                <span class="remove-btn">✕</span>
-
-                <h4>🥗 Thực đơn giảm cân</h4>
-
-                <div class="meal-section">
-                    <strong>🍳 Bữa sáng</strong><br>
-                    Yến mạch + Trứng luộc + Chuối
-                </div>
-
-                <div class="meal-section">
-                    <strong>🍛 Bữa trưa</strong><br>
-                    Ức gà áp chảo + Gạo lứt + Rau xanh
-                </div>
-
-                <div class="meal-section">
-                    <strong>🥗 Bữa tối</strong><br>
-                    Cá hấp + Salad dầu oliu
-                </div>
-
-                <div class="meal-footer">
-                    <button class="detail-btn">Xem chi tiết</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="day">
-            <h3>Thứ 4<br><small>07/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-        <div class="day">
-            <h3>Thứ 5<br><small>08/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-        <div class="day">
-            <h3>Thứ 6<br><small>09/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-        <div class="day">
-            <h3>Thứ 7<br><small>10/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-        <div class="day">
-            <h3>Chủ nhật<br><small>11/01</small></h3>
-            <div class="add-meal">+</div>
-        </div>
-
-    </div>
+    <div class="calendar"></div>
 </div>
 
+<script src="/js/api.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/my_meal.js"></script>
 

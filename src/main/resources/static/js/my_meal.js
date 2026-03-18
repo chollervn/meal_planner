@@ -1,252 +1,326 @@
 /**
- * ============================================
- * MY MEAL CALENDAR - Meal calendar management
- * ============================================
+ * Weekly meal schedule page
  */
 
-let currentDate = new Date();
-let weekStart = getWeekStart(currentDate);
+let weekStart = getWeekStart(new Date());
+let availableMeals = [];
+let yearSelect = null;
+let monthSelect = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = Storage.get('user');
+  if (user && String(user.role || '').toUpperCase() === 'ADMIN') {
+    alert('Tài khoản admin không sử dụng lịch áp thực đơn. Đang quay về trang quản trị.');
+    Navigation.navigate(Navigation.pages.admin);
+    return;
+  }
+
+  resetToCurrentWeek();
   setupControls();
-  renderCalendar();
+  await loadMeals();
+  await renderCalendar();
 });
 
+window.addEventListener('pageshow', async () => {
+  resetToCurrentWeek();
+  syncControlsWithWeek();
+  await renderCalendar();
+});
+
+function resetToCurrentWeek() {
+  weekStart = getWeekStart(new Date());
+}
+
 function setupControls() {
-  const prevBtn = document.querySelector('.controls button:nth-child(3)');
-  const nextBtn = document.querySelector('.controls button:nth-child(4)');
+  yearSelect = document.getElementById('yearSelect');
+  monthSelect = document.getElementById('monthSelect');
+
+  const prevBtn = document.getElementById('prevWeekBtn');
+  const nextBtn = document.getElementById('nextWeekBtn');
+
+  setupDateSelectors();
 
   if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      weekStart.setDate(weekStart.getDate() - 7);
-      renderCalendar();
+    prevBtn.addEventListener('click', async () => {
+      weekStart = addDays(weekStart, -7);
+      syncControlsWithWeek();
+      await renderCalendar();
     });
   }
 
   if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      weekStart.setDate(weekStart.getDate() + 7);
-      renderCalendar();
+    nextBtn.addEventListener('click', async () => {
+      weekStart = addDays(weekStart, 7);
+      syncControlsWithWeek();
+      await renderCalendar();
     });
   }
+
+  if (yearSelect) {
+    yearSelect.addEventListener('change', jumpToSelectedMonthYear);
+  }
+
+  if (monthSelect) {
+    monthSelect.addEventListener('change', jumpToSelectedMonthYear);
+  }
 }
 
-function getWeekStart(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-  return new Date(d.setDate(diff));
+function setupDateSelectors() {
+  if (monthSelect) {
+    monthSelect.innerHTML = '';
+    for (let month = 1; month <= 12; month += 1) {
+      const option = document.createElement('option');
+      option.value = String(month);
+      option.textContent = `Tháng ${month}`;
+      monthSelect.appendChild(option);
+    }
+  }
+
+  if (yearSelect) {
+    yearSelect.innerHTML = '';
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear - 5; year <= currentYear + 5; year += 1) {
+      const option = document.createElement('option');
+      option.value = String(year);
+      option.textContent = String(year);
+      yearSelect.appendChild(option);
+    }
+  }
+
+  syncControlsWithWeek();
 }
 
-function renderCalendar() {
+function syncControlsWithWeek() {
+  if (yearSelect) {
+    const yearValue = String(weekStart.getFullYear());
+    if (!yearSelect.querySelector(`option[value="${yearValue}"]`)) {
+      const option = document.createElement('option');
+      option.value = yearValue;
+      option.textContent = yearValue;
+      yearSelect.appendChild(option);
+    }
+    yearSelect.value = yearValue;
+  }
+  if (monthSelect) {
+    monthSelect.value = String(weekStart.getMonth() + 1);
+  }
+}
+
+async function jumpToSelectedMonthYear() {
+  if (!yearSelect || !monthSelect) {
+    return;
+  }
+
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  if (!year || !month) {
+    return;
+  }
+
+  weekStart = getWeekStart(new Date(year, month - 1, 1));
+  syncControlsWithWeek();
+  await renderCalendar();
+}
+
+async function loadMeals() {
+  try {
+    const result = await ApiService.getMeals();
+    if (result?.success && Array.isArray(result.data)) {
+      availableMeals = result.data;
+    }
+  } catch (error) {
+    availableMeals = [];
+  }
+}
+
+async function renderCalendar() {
   const calendar = document.querySelector('.calendar');
-  if (!calendar) return;
+  if (!calendar) {
+    return;
+  }
+
+  const user = Storage.get('user');
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
+    return;
+  }
+
+  const weekDates = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const startDate = formatDateKey(weekDates[0]);
+  const endDate = formatDateKey(weekDates[6]);
+
+  calendar.innerHTML = '<div style="text-align:center;padding:20px;">Đang tải...</div>';
+
+  let scheduleMap = {};
+  try {
+    const result = await ApiService.getUserScheduleWeek(user.userId, startDate, endDate);
+    if (result?.success && Array.isArray(result.data)) {
+      scheduleMap = mapSchedule(result.data);
+    }
+  } catch (error) {
+    scheduleMap = {};
+  }
 
   calendar.innerHTML = '';
+  syncControlsWithWeek();
+  const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
-  const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-  const mealSchedule = Storage.get('mealSchedule') || {};
+  weekDates.forEach((date, index) => {
+    const key = formatDateKey(date);
+    const meal = scheduleMap[key];
 
-  for (let i = 0; i < 7; i++) {
-    const currentDay = new Date(weekStart);
-    currentDay.setDate(weekStart.getDate() + i);
-    const dateKey = formatDateKey(currentDay);
+    const day = document.createElement('div');
+    day.className = `day ${meal ? 'has-meal' : ''}`;
+    day.innerHTML = `<h3>${dayNames[index]}<br><small>${formatDisplayDate(date)}</small></h3>`;
 
-    const dayElement = createDayElement(
-      days[i],
-      currentDay,
-      mealSchedule[dateKey]
-    );
+    if (meal) {
+      day.innerHTML += createMealCard(meal, key);
+    } else {
+      const addBox = document.createElement('div');
+      addBox.className = 'add-meal';
+      addBox.textContent = '+';
+      addBox.addEventListener('click', () => openMealSelector(key));
+      day.appendChild(addBox);
+    }
 
-    calendar.appendChild(dayElement);
-  }
+    calendar.appendChild(day);
+  });
 }
 
-function createDayElement(dayName, date, meal) {
-  const div = document.createElement('div');
-  div.className = meal ? 'day has-meal' : 'day';
+function mapSchedule(scheduleItems) {
+  const map = {};
+  scheduleItems.forEach((item) => {
+    const dateKey = item.date;
+    const meal = item.mealTemplate;
+    if (!dateKey || !meal) {
+      return;
+    }
 
-  const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-  div.innerHTML = `
-    <h3>${dayName}<br><small>${dateStr}</small></h3>
-  `;
-
-  if (meal) {
-    div.innerHTML += createMealCard(meal, formatDateKey(date));
-  } else {
-    const addMeal = document.createElement('div');
-    addMeal.className = 'add-meal';
-    addMeal.textContent = '+';
-    addMeal.addEventListener('click', () => openMealSelector(formatDateKey(date)));
-    div.appendChild(addMeal);
-  }
-
-  return div;
+    map[dateKey] = {
+      mealId: meal.idmf,
+      name: meal.mealName,
+      type: meal.type,
+      totalCalo: Math.round(meal.calo || 0),
+      breakfast: 'Xem chi tiết để xem danh sách món',
+      lunch: 'Xem chi tiết để xem danh sách món',
+      dinner: 'Xem chi tiết để xem danh sách món'
+    };
+  });
+  return map;
 }
 
 function createMealCard(meal, dateKey) {
   return `
     <div class="meal-card">
-      <span class="meal-calories">🔥 ${meal.totalCalo || 1500} kcal</span>
+      <span class="meal-calories">🔥 ${meal.totalCalo || 0} kcal</span>
       <span class="remove-btn" onclick="removeMeal('${dateKey}')">✕</span>
-
-      <h4>${meal.name || '🥗 Thực đơn tùy chỉnh'}</h4>
-
-      <div class="meal-section">
-        <strong>🍳 Bữa sáng</strong><br>
-        ${meal.breakfast || 'Chưa có thông tin'}
-      </div>
-
-      <div class="meal-section">
-        <strong>🍛 Bữa trưa</strong><br>
-        ${meal.lunch || 'Chưa có thông tin'}
-      </div>
-
-      <div class="meal-section">
-        <strong>🥗 Bữa tối</strong><br>
-        ${meal.dinner || 'Chưa có thông tin'}
-      </div>
-
+      <h4>${meal.name || 'Thực đơn'}</h4>
+      <div class="meal-section"><strong>🍳 Bữa sáng</strong><br>${meal.breakfast || '-'}</div>
+      <div class="meal-section"><strong>🍛 Bữa trưa</strong><br>${meal.lunch || '-'}</div>
+      <div class="meal-section"><strong>🥗 Bữa tối</strong><br>${meal.dinner || '-'}</div>
       <div class="meal-footer">
-        <button class="detail-btn" onclick="viewMealDetail('${dateKey}')">Xem chi tiết</button>
+        <button class="detail-btn" onclick="viewMealDetail(${meal.mealId || 'null'})">Xem chi tiết</button>
       </div>
     </div>
   `;
 }
 
 function openMealSelector(dateKey) {
-  // Create modal for meal selection
+  if (!availableMeals.length) {
+    alert('Chưa có thực đơn để áp dụng');
+    return;
+  }
+
   const modal = document.createElement('div');
   modal.className = 'modal active';
   modal.id = 'mealSelectorModal';
 
   modal.innerHTML = `
     <div class="modal-content">
-      <h3>Chọn thực đơn cho ngày này</h3>
-
-      <div style="margin: 20px 0;">
-        <h4 style="color: #be123c; margin-bottom: 12px;">Thực đơn mẫu</h4>
-        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;"
-          onclick="assignMeal('${dateKey}', 'diet')">
-          🥗 Thực đơn giảm cân (1500 kcal)
-        </button>
-        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;"
-          onclick="assignMeal('${dateKey}', 'gain')">
-          🍱 Thực đơn tăng cân (2800 kcal)
-        </button>
-        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;"
-          onclick="assignMeal('${dateKey}', 'maintain')">
-          🥙 Thực đơn duy trì (2200 kcal)
-        </button>
-      </div>
-
-      <div style="margin: 20px 0;">
-        <h4 style="color: #be123c; margin-bottom: 12px;">Thực đơn của tôi</h4>
-        <div id="customMealsList"></div>
-      </div>
-
-      <button class="btn btn-primary" onclick="closeModal('mealSelectorModal')" style="width: 100%;">
-        Đóng
-      </button>
+      <h3>Chọn thực đơn cho ngày ${dateKey}</h3>
+      <div id="mealSelectorList"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="closeModal('mealSelectorModal')">Đóng</button>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  // Load custom meals
-  loadCustomMeals(dateKey);
+  const list = modal.querySelector('#mealSelectorList');
+  list.innerHTML = availableMeals.map((meal) => `
+    <button class="btn btn-secondary" style="width:100%; margin-bottom:8px;" data-id="${meal.idmf}">
+      ${meal.mealName} (${Math.round(meal.calo || 0)} kcal)
+    </button>
+  `).join('');
 
-  // Close on outside click
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
+  list.querySelectorAll('button[data-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await assignMeal(dateKey, Number(button.getAttribute('data-id')));
+    });
+  });
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
       closeModal('mealSelectorModal');
     }
   });
 }
 
-function loadCustomMeals(dateKey) {
-  const customMeals = Storage.get('customMeals') || [];
-  const container = document.getElementById('customMealsList');
-
-  if (customMeals.length === 0) {
-    container.innerHTML = '<p style="color: #999; font-size: 14px;">Chưa có thực đơn tùy chỉnh</p>';
+async function assignMeal(dateKey, mealId) {
+  const user = Storage.get('user');
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
     return;
   }
 
-  container.innerHTML = customMeals.map(meal => `
-    <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;"
-      onclick="assignCustomMeal('${dateKey}', ${meal.id})">
-      ${meal.name} (${meal.totalCalo} kcal)
-    </button>
-  `).join('');
-}
+  try {
+    const result = await ApiService.applyMealToSchedule({
+      userId: user.userId,
+      mealId,
+      date: dateKey
+    });
 
-function assignMeal(dateKey, type) {
-  const meals = {
-    diet: {
-      name: '🥗 Thực đơn giảm cân',
-      totalCalo: 1500,
-      breakfast: 'Yến mạch + Trứng luộc + Chuối',
-      lunch: 'Ức gà áp chảo + Gạo lứt + Rau xanh',
-      dinner: 'Cá hấp + Salad dầu oliu'
-    },
-    gain: {
-      name: '🍱 Thực đơn tăng cân',
-      totalCalo: 2800,
-      breakfast: 'Bánh mì sandwich + Sữa + Chuối',
-      lunch: 'Thịt bò + Cơm trắng + Rau củ',
-      dinner: 'Cá hồi + Khoai lang + Bơ'
-    },
-    maintain: {
-      name: '🥙 Thực đơn duy trì',
-      totalCalo: 2200,
-      breakfast: 'Yến mạch + Sữa chua + Quả mọng',
-      lunch: 'Gà nướng + Cơm lứt + Salad',
-      dinner: 'Cá + Khoai tây + Rau luộc'
+    if (!result?.success) {
+      showApiAlert(result);
+      return;
     }
-  };
 
-  const schedule = Storage.get('mealSchedule') || {};
-  schedule[dateKey] = meals[type];
-  Storage.set('mealSchedule', schedule);
-
-  closeModal('mealSelectorModal');
-  renderCalendar();
-}
-
-function assignCustomMeal(dateKey, mealId) {
-  const customMeals = Storage.get('customMeals') || [];
-  const meal = customMeals.find(m => m.id === mealId);
-
-  if (meal) {
-    const schedule = Storage.get('mealSchedule') || {};
-    schedule[dateKey] = {
-      name: meal.name,
-      totalCalo: meal.totalCalo,
-      breakfast: meal.type === 'breakfast' ? meal.foods.map(f => f.name).join(', ') : '',
-      lunch: meal.type === 'lunch' ? meal.foods.map(f => f.name).join(', ') : '',
-      dinner: meal.type === 'dinner' ? meal.foods.map(f => f.name).join(', ') : ''
-    };
-    Storage.set('mealSchedule', schedule);
-  }
-
-  closeModal('mealSelectorModal');
-  renderCalendar();
-}
-
-function removeMeal(dateKey) {
-  if (confirm('Bạn có chắc muốn xóa thực đơn này?')) {
-    const schedule = Storage.get('mealSchedule') || {};
-    delete schedule[dateKey];
-    Storage.set('mealSchedule', schedule);
-    renderCalendar();
+    closeModal('mealSelectorModal');
+    await renderCalendar();
+  } catch (error) {
+    alert('Có lỗi khi áp dụng thực đơn');
   }
 }
 
-function viewMealDetail(dateKey) {
-  // Navigate to detail page with date parameter
-  Navigation.navigate(Navigation.pages.mealDetail + '?date=' + dateKey);
+async function removeMeal(dateKey) {
+  if (!confirm('Bạn chắc chắn muốn xóa thực đơn ngày này?')) {
+    return;
+  }
+
+  const user = Storage.get('user');
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
+    return;
+  }
+
+  try {
+    const result = await ApiService.removeMealFromSchedule(user.userId, dateKey);
+    if (!result?.success) {
+      showApiAlert(result);
+      return;
+    }
+    await renderCalendar();
+  } catch (error) {
+    alert('Có lỗi khi xóa thực đơn');
+  }
+}
+
+function viewMealDetail(mealId) {
+  if (mealId) {
+    Storage.set('selectedMealId', mealId);
+    Navigation.navigate(`${Navigation.pages.mealDetail}?mealId=${mealId}`);
+    return;
+  }
+  Navigation.navigate(Navigation.pages.mealDetail);
 }
 
 function closeModal(modalId) {
@@ -256,6 +330,38 @@ function closeModal(modalId) {
   }
 }
 
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setHours(0, 0, 0, 0);
+  return new Date(d.setDate(diff));
+}
+
 function formatDateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+}
+
+function showApiAlert(payload) {
+  const fields = ApiService.getFieldErrors(payload);
+  if (fields) {
+    alert(Object.values(fields).join('\n'));
+    return;
+  }
+  alert(ApiService.getErrorText(payload));
 }

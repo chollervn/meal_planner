@@ -18,6 +18,14 @@ const Navigation = {
   },
 
   navigate(page) {
+    const user = Storage.get('user');
+    const isAdmin = user && String(user.role || '').toUpperCase() === 'ADMIN';
+
+    if (isAdmin && page === this.pages.myMeal) {
+      window.location.href = this.pages.admin;
+      return;
+    }
+
     window.location.href = page;
   },
 
@@ -32,6 +40,8 @@ const Navigation = {
   },
 
   setupNavigation() {
+    this.applyRoleBasedNav();
+
     const navLinks = document.querySelectorAll('.nav-menu a');
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
@@ -45,8 +55,10 @@ const Navigation = {
           this.navigate(this.pages.mealPlans);
         } else if (text.includes('Dashboard')) {
           this.navigate(this.pages.dashboard);
-        } else if (text.includes('Người dùng')) {
+        } else if (text.includes('Người dùng') || text.includes('Quản lý người dùng') || text.includes('Quản lí người dùng')) {
           this.navigate(this.pages.admin);
+        } else if (text.trim() === 'Thực đơn') {
+          this.navigate(this.pages.mealPlans);
         }
       });
     });
@@ -65,13 +77,47 @@ const Navigation = {
     const logo = document.querySelector('.logo');
     if (logo) {
       logo.addEventListener('click', () => {
-        this.navigate(this.pages.dashboard);
+        const user = Storage.get('user');
+        const isAdmin = user && String(user.role || '').toUpperCase() === 'ADMIN';
+        this.navigate(isAdmin ? this.pages.admin : this.pages.dashboard);
       });
     }
   },
 
-  logout() {
-    // Clear session/localStorage
+  applyRoleBasedNav() {
+    const user = Storage.get('user');
+    const isAdmin = user && String(user.role || '').toUpperCase() === 'ADMIN';
+    if (!isAdmin) {
+      return;
+    }
+
+    const links = Array.from(document.querySelectorAll('.nav-menu a:not(.logout)'));
+    if (!links.length) {
+      return;
+    }
+
+    if (links[0]) {
+      links[0].textContent = 'Quản lý người dùng';
+    }
+
+    if (links[1]) {
+      links[1].textContent = 'Thực đơn mẫu';
+    }
+
+    for (let i = links.length - 1; i >= 2; i -= 1) {
+      links[i].remove();
+    }
+  },
+
+  async logout() {
+    try {
+      if (window.ApiService && typeof window.ApiService.logout === 'function') {
+        await window.ApiService.logout();
+      }
+    } catch (error) {
+      // Ignore API logout failure and still clear client session
+    }
+
     localStorage.clear();
     sessionStorage.clear();
     this.navigate(this.pages.login);

@@ -31,18 +31,22 @@
             <button>Trưa</button>
             <button>Tối</button>
         </div>
-
-        <div class="calo-input">
-             Calo mục tiêu:
-            <input type="number" placeholder="VD: 500">
+        <div class="meal-name-box">
+            <label for="mealNameInput">Tên thực đơn</label>
+            <input type="text" id="mealNameInput" placeholder="Nhập tên thực đơn">
         </div>
+        <div class="calorie-box">
+            <div>🍽️ Calo bữa đang chọn: <b id="currentMealCalories">0 kcal</b></div>
+            <div>🔥 Tổng calo cả thực đơn: <b id="totalMealCalories">0 kcal</b></div>
+        </div>
+        <button id="manageFoodsBtn" type="button" class="manage-foods-btn">Quản lý thực phẩm</button>
     </div>
 
     <div class="table-box">
         <table id="mealTable">
             <tr>
                 <th>Thực phẩm</th>
-                <th>Định lượng (g)</th>
+                <th>Định lượng (1=100g)</th>
                 <th>Calo</th>
                 <th>Thao tác</th>
             </tr>
@@ -68,12 +72,50 @@
             <!-- Will be populated by JS -->
         </select>
 
-        <input type="number" id="quantity" placeholder="Định lượng (g)">
+        <input type="number" id="quantity" placeholder="Nhập 1,2,3... (1=100g)">
+        <p id="selectedFoodCalories" class="selected-food-calories">Ước tính: 0 kcal</p>
 
         <button id="addFoodBtn">Thêm</button>
     </div>
 </div>
 
+<div class="modal" id="foodLibraryModal">
+    <div class="modal-content food-library-content">
+        <h3>📚 Danh sách thực phẩm</h3>
+
+        <div class="food-library-tools">
+            <input type="text" id="foodSearchInput" placeholder="Tìm theo tên thực phẩm...">
+        </div>
+
+        <div class="food-library-table-wrap">
+            <table id="foodLibraryTable">
+                <tr>
+                    <th>Tên</th>
+                    <th>Calo/100g</th>
+                    <th>Đạm</th>
+                    <th>Béo</th>
+                    <th>Carb</th>
+                </tr>
+            </table>
+        </div>
+
+        <h4>➕ Thêm thực phẩm mới</h4>
+        <div class="food-form-grid">
+            <input type="text" id="newFoodName" placeholder="Tên thực phẩm">
+            <input type="number" step="0.1" min="0" id="newFoodCalories" placeholder="Calories/100g">
+            <input type="number" step="0.1" min="0" id="newFoodProtein" placeholder="Protein/100g">
+            <input type="number" step="0.1" min="0" id="newFoodFat" placeholder="Fat/100g">
+            <input type="number" step="0.1" min="0" id="newFoodCarb" placeholder="Carb/100g">
+            <input type="number" step="0.1" min="0" id="newFoodFiber" placeholder="Fiber/100g">
+        </div>
+        <div class="food-library-actions">
+            <button id="saveFoodBtn" type="button">Lưu thực phẩm</button>
+            <button type="button" class="close-btn" onclick="Modal.close('foodLibraryModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/api.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/create_meal.js"></script>
 

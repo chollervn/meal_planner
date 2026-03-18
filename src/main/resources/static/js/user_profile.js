@@ -1,29 +1,58 @@
 /**
- * ============================================
- * USER PROFILE - User information management
- * ============================================
+ * User profile page logic
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadUserProfile();
+document.addEventListener('DOMContentLoaded', async () => {
   setupProfileHandlers();
+  await loadUserProfile();
 });
 
-function loadUserProfile() {
+async function loadUserProfile() {
   const user = Storage.get('user');
-  if (user) {
-    // Load saved profile data
-    const profile = Storage.get('userProfile') || {};
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
+    return;
+  }
 
-    if (profile.name) document.getElementById('userName').value = profile.name;
-    if (profile.age) document.getElementById('userAge').value = profile.age;
-    if (profile.height) document.getElementById('userHeight').value = profile.height;
-    if (profile.weight) document.getElementById('userWeight').value = profile.weight;
-    if (profile.email) document.getElementById('userEmail').value = profile.email;
+  let profile = Storage.get('userProfile') || {};
 
-    // Calculate and display BMI
-    if (profile.height && profile.weight) {
-      updateBMI(profile.weight, profile.height);
+  try {
+    const result = await ApiService.getUserById(user.userId);
+    if (result?.success && result.data) {
+      profile = {
+        name: result.data.username,
+        email: result.data.email,
+        age: result.data.age,
+        height: result.data.heightCm,
+        weight: result.data.weightKg,
+        bmi: result.data.bmi,
+        userImage: result.data.userImage || null
+      };
+      Storage.set('userProfile', profile);
+    }
+  } catch (error) {
+    // Keep local data if API not available
+  }
+
+  fillProfile(profile);
+}
+
+function fillProfile(profile) {
+  if (profile.email) document.getElementById('userEmail').value = profile.email;
+  if (profile.name) document.getElementById('userName').value = profile.name;
+  if (profile.age !== undefined && profile.age !== null) document.getElementById('userAge').value = profile.age;
+  if (profile.height !== undefined && profile.height !== null) document.getElementById('userHeight').value = profile.height;
+  if (profile.weight !== undefined && profile.weight !== null) document.getElementById('userWeight').value = profile.weight;
+
+  const bmiValue = profile.bmi || (profile.weight && profile.height ? BMICalculator.calculate(profile.weight, profile.height) : null);
+  if (bmiValue) {
+    renderBMI(bmiValue);
+  }
+
+  if (profile.userImage) {
+    const avatar = document.querySelector('.avatar');
+    if (avatar) {
+      avatar.innerHTML = `<img src="${profile.userImage}" alt="Avatar">`;
     }
   }
 }
@@ -34,12 +63,10 @@ function setupProfileHandlers() {
   const heightInput = document.getElementById('userHeight');
   const weightInput = document.getElementById('userWeight');
 
-  // Save profile
   if (saveBtn) {
     saveBtn.addEventListener('click', saveProfile);
   }
 
-  // Upload avatar
   if (uploadBtn) {
     uploadBtn.addEventListener('click', () => {
       const input = document.createElement('input');
@@ -50,125 +77,161 @@ function setupProfileHandlers() {
     });
   }
 
-  // Auto-calculate BMI when height/weight change
-  if (heightInput && weightInput) {
-    heightInput.addEventListener('input', () => {
-      const height = parseFloat(heightInput.value);
-      const weight = parseFloat(weightInput.value);
-      if (height && weight) {
-        updateBMI(weight, height);
-      }
+  const onPhysicalInputChanged = () => {
+    const height = parseFloat(heightInput?.value);
+    const weight = parseFloat(weightInput?.value);
+    if (height > 0 && weight > 0) {
+      renderBMI(BMICalculator.calculate(weight, height));
+    }
+  };
+
+  if (heightInput) heightInput.addEventListener('input', onPhysicalInputChanged);
+  if (weightInput) weightInput.addEventListener('input', onPhysicalInputChanged);
+}
+
+async function saveProfile() {
+  const user = Storage.get('user');
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
+    return;
+  }
+
+  const payload = {
+    username: document.getElementById('userName').value.trim(),
+    age: toNullableNumber(document.getElementById('userAge').value),
+    heightCm: toNullableNumber(document.getElementById('userHeight').value),
+    weightKg: toNullableNumber(document.getElementById('userWeight').value),
+    userImage: Storage.get('userAvatar') || null
+  };
+
+  if (!payload.username || payload.username.length < 2) {
+    alert('Tên người dùng phải từ 2 ký tự');
+    return;
+  }
+
+  if (payload.age !== null && (payload.age < 1 || payload.age > 120)) {
+    alert('Tuổi không hợp lệ');
+    return;
+  }
+
+  if (payload.heightCm !== null && (payload.heightCm < 50 || payload.heightCm > 300)) {
+    alert('Chiều cao không hợp lệ');
+    return;
+  }
+
+  if (payload.weightKg !== null && (payload.weightKg < 10 || payload.weightKg > 500)) {
+    alert('Cân nặng không hợp lệ');
+    return;
+  }
+
+  try {
+    const result = await ApiService.updateUser(user.userId, payload);
+    if (!result?.success || !result.data) {
+      showApiAlert(result);
+      return;
+    }
+
+    const profile = {
+      name: result.data.username,
+      email: result.data.email,
+      age: result.data.age,
+      height: result.data.heightCm,
+      weight: result.data.weightKg,
+      bmi: result.data.bmi,
+      userImage: result.data.userImage || null
+    };
+
+    Storage.set('userProfile', profile);
+    Storage.set('user', {
+      ...Storage.get('user'),
+      name: result.data.username,
+      email: result.data.email,
+      role: result.data.role || Storage.get('user')?.role
     });
 
-    weightInput.addEventListener('input', () => {
-      const height = parseFloat(heightInput.value);
-      const weight = parseFloat(weightInput.value);
-      if (height && weight) {
-        updateBMI(weight, height);
-      }
-    });
+    renderBMI(result.data.bmi);
+    flashSavedState();
+  } catch (error) {
+    alert('Có lỗi xảy ra, vui lòng thử lại');
   }
 }
 
-function saveProfile() {
-  const profile = {
-    name: document.getElementById('userName').value,
-    email: document.getElementById('userEmail').value,
-    age: document.getElementById('userAge').value,
-    height: document.getElementById('userHeight').value,
-    weight: document.getElementById('userWeight').value
-  };
-
-  // Validate
-  if (!profile.name || profile.name.length < 2) {
-    alert('Vui lòng nhập họ tên hợp lệ!');
+function renderBMI(bmiValue) {
+  const bmiInput = document.getElementById('userBMI');
+  if (!bmiInput) {
     return;
   }
 
-  if (profile.age && (profile.age < 10 || profile.age > 120)) {
-    alert('Tuổi không hợp lệ!');
+  const bmi = Number(bmiValue);
+  if (!bmi || Number.isNaN(bmi)) {
+    bmiInput.value = 'Chưa đủ dữ liệu';
     return;
   }
 
-  if (profile.height && (profile.height < 100 || profile.height > 250)) {
-    alert('Chiều cao không hợp lệ!');
-    return;
-  }
+  const status = BMICalculator.getStatus(bmi);
+  const emoji = BMICalculator.getEmoji(bmi);
+  bmiInput.value = `${bmi.toFixed(1)} - ${status.label} ${emoji}`;
+}
 
-  if (profile.weight && (profile.weight < 30 || profile.weight > 300)) {
-    alert('Cân nặng không hợp lệ!');
-    return;
-  }
-
-  // Save to storage
-  Storage.set('userProfile', profile);
-
-  // Update user in storage
-  const user = Storage.get('user');
-  user.name = profile.name;
-  Storage.set('user', user);
-
-  // Show success message
+function flashSavedState() {
   const saveBtn = document.querySelector('.save-btn');
+  if (!saveBtn) {
+    return;
+  }
+
   const originalText = saveBtn.textContent;
-  saveBtn.textContent = '✓ Đã lưu!';
+  const originalColor = saveBtn.style.background;
+
+  saveBtn.textContent = 'Đã lưu';
   saveBtn.style.background = '#22c55e';
 
   setTimeout(() => {
     saveBtn.textContent = originalText;
-    saveBtn.style.background = '';
-  }, 2000);
+    saveBtn.style.background = originalColor;
+  }, 1200);
 }
 
-function updateBMI(weight, height) {
-  const bmi = BMICalculator.calculate(weight, height);
-  const status = BMICalculator.getStatus(parseFloat(bmi));
-  const emoji = BMICalculator.getEmoji(parseFloat(bmi));
-
-  const bmiInput = document.getElementById('userBMI');
-  if (bmiInput) {
-    bmiInput.value = `${bmi} (${status.label}) ${emoji}`;
+function handleAvatarUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
   }
 
-  // Update BMI display if exists
-  const bmiDisplay = document.querySelector('.bmi-status');
-  if (bmiDisplay) {
-    bmiDisplay.innerHTML = `
-      <h3>Chỉ số BMI của bạn</h3>
-      <div class="bmi-value">${bmi}</div>
-      <div class="bmi-label">
-        <span class="badge badge-${status.class}">${status.label}</span>
-        ${emoji}
-      </div>
-    `;
-  }
-}
-
-function handleAvatarUpload(e) {
-  const file = e.target.files[0];
-
-  if (!file) return;
-
-  // Check file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('Kích thước file quá lớn! Vui lòng chọn file dưới 5MB.');
+    alert('Kích thước file quá lớn, tối đa 5MB');
     return;
   }
 
-  // Check file type
   if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
-    alert('Chỉ chấp nhận file PNG hoặc JPG!');
+    alert('Chỉ chấp nhận PNG hoặc JPG');
     return;
   }
 
-  // Read and display image
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = (loadEvent) => {
+    const base64 = loadEvent.target.result;
     const avatar = document.querySelector('.avatar');
-    avatar.innerHTML = `<img src="${event.target.result}" alt="Avatar">`;
-
-    // Save to storage
-    Storage.set('userAvatar', event.target.result);
+    if (avatar) {
+      avatar.innerHTML = `<img src="${base64}" alt="Avatar">`;
+    }
+    Storage.set('userAvatar', base64);
   };
   reader.readAsDataURL(file);
+}
+
+function toNullableNumber(value) {
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+}
+
+function showApiAlert(payload) {
+  const fields = ApiService.getFieldErrors(payload);
+  if (fields) {
+    alert(Object.values(fields).join('\n'));
+    return;
+  }
+  alert(ApiService.getErrorText(payload));
 }

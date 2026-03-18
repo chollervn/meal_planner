@@ -14,9 +14,8 @@
 <div class="navbar">
     <div class="logo">BMI Meal Planner - Admin</div>
     <div class="nav-menu">
-        <a>Dashboard</a>
-        <a>Người dùng</a>
-        <a>Thực đơn</a>
+        <a>Quản lý người dùng</a>
+        <a>Thực đơn mẫu</a>
         <a class="logout">Đăng xuất</a>
     </div>
 </div>
@@ -29,23 +28,25 @@
     <div class="stats">
         <div class="stat-card">
             <h3>Tổng người dùng</h3>
-            <p>128</p>
+            <p id="statTotalUsers">-</p>
         </div>
 
         <div class="stat-card">
             <h3>Thực đơn đã áp dụng</h3>
-            <p>842</p>
+            <p id="statAppliedMeals">-</p>
         </div>
 
         <div class="stat-card">
             <h3>Thực đơn phổ biến nhất</h3>
-            <p>Giảm cân</p>
+            <p id="statMostPopular">-</p>
         </div>
 
         <div class="stat-card">
             <h3>User hoạt động tuần này</h3>
-            <p>76</p>
+            <p id="statActiveUsers">-</p>
         </div>
+
+
     </div>
 
     <!-- TABLE -->
@@ -61,45 +62,38 @@
                 <th>Thực đơn hay dùng</th>
                 <th>Chi tiết</th>
             </tr>
-
-            <tr>
-                <td>1</td>
-                <td>Nguyễn Văn A</td>
-                <td>a@gmail.com</td>
-                <td>22</td>
-                <td><span class="badge badge-normal">Bình thường</span></td>
-                <td>12</td>
-                <td>Giảm cân</td>
-                <td><button class="view-btn">Xem</button></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>Trần Thị B</td>
-                <td>b@gmail.com</td>
-                <td>25</td>
-                <td><span class="badge badge-over">Thừa cân</span></td>
-                <td>18</td>
-                <td>Duy trì</td>
-                <td><button class="view-btn">Xem</button></td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>Lê Văn C</td>
-                <td>c@gmail.com</td>
-                <td>20</td>
-                <td><span class="badge badge-under">Thiếu cân</span></td>
-                <td>9</td>
-                <td>Tăng cân</td>
-                <td><button class="view-btn">Xem</button></td>
-            </tr>
+            <tbody id="adminUsersBody">
+                <tr>
+                    <td colspan="8" style="text-align:center;">Đang tải...</td>
+                </tr>
+            </tbody>
 
         </table>
     </div>
 </div>
 
+<div class="modal" id="adminUserDetailModal">
+    <div class="modal-content admin-user-detail-modal">
+        <h3>👤 Chi tiết tài khoản</h3>
+        <div class="admin-user-detail-grid">
+            <div class="detail-label">ID</div><div id="detailUserId">-</div>
+            <div class="detail-label">Tên</div><div id="detailUsername">-</div>
+            <div class="detail-label">Email</div><div id="detailEmail">-</div>
+            <div class="detail-label">Tuổi</div><div id="detailAge">-</div>
+            <div class="detail-label">Chiều cao</div><div id="detailHeight">-</div>
+            <div class="detail-label">Cân nặng</div><div id="detailWeight">-</div>
+            <div class="detail-label">BMI</div><div id="detailBmi">-</div>
+            <div class="detail-label">Vai trò</div><div id="detailRole">-</div>
+        </div>
+        <div class="admin-user-detail-actions">
+            <button type="button" class="view-btn" id="closeAdminDetailBtn">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/api.js"></script>
 <script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
 
 </body>
 </html>

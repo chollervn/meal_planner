@@ -3,18 +3,10 @@ package com.ronaldo.meal_planner_vip.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-/**
- * Controller để phục vụ các trang frontend
- */
 @Controller
 public class PageController {
 
-    @GetMapping("/")
-    public String index() {
-        return "login";
-    }
-
-    @GetMapping("/login")
+    @GetMapping({"/", "/login"})
     public String login() {
         return "login";
     }
