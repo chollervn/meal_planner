@@ -4,6 +4,7 @@ import com.ronaldo.meal_planner_vip.dto.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,6 +35,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleConstraintViolation(ConstraintViolationException exception) {
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResourceFoundException(NoResourceFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Không tìm thấy tài nguyên"));
     }
 
     @ExceptionHandler(Exception.class)

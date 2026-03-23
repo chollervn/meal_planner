@@ -61,8 +61,15 @@ function bindLoginForm() {
         userId: user.userId,
         email: user.email,
         name: user.username,
-        role: user.role || 'USER'
+        role: user.role || 'USER',
+        accessToken: user.accessToken || null
       });
+
+      if (user.accessToken) {
+        localStorage.setItem('authToken', user.accessToken);
+      } else {
+        localStorage.removeItem('authToken');
+      }
 
       Storage.set('userProfile', {
         name: user.username,

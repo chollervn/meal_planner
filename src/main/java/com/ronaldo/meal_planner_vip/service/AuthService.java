@@ -25,7 +25,7 @@ public class AuthService {
             throw new ResourceNotFoundException("Email không tồn tại!");
         }
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!isPasswordValid(password, user)) {
             throw new UnauthorizedException("Mật khẩu không đúng!");
         }
 
@@ -57,5 +57,28 @@ public class AuthService {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại!"));
         return "ADMIN".equals(user.getRole());
+    }
+
+    private boolean isPasswordValid(String rawPassword, Users user) {
+        String storedPassword = user.getPassword();
+        if (storedPassword == null || storedPassword.isBlank()) {
+            return false;
+        }
+
+        if (isBcryptHash(storedPassword)) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        if (!rawPassword.equals(storedPassword)) {
+            return false;
+        }
+
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        usersRepository.save(user);
+        return true;
+    }
+
+    private boolean isBcryptHash(String value) {
+        return value.matches("^\\$2[aby]\\$.{56}$");
     }
 }

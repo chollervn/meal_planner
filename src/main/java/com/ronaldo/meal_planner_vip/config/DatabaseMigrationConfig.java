@@ -28,6 +28,20 @@ public class DatabaseMigrationConfig {
     }
 
     @Bean
+    public CommandLineRunner ensureMealImageColumn(JdbcTemplate jdbcTemplate) {
+        return args -> {
+            Integer columnCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'meal_template' AND COLUMN_NAME = 'meal_image'",
+                    Integer.class
+            );
+
+            if (columnCount != null && columnCount == 0) {
+                jdbcTemplate.execute("ALTER TABLE meal_template ADD COLUMN meal_image VARCHAR(500) NULL");
+            }
+        };
+    }
+
+    @Bean
     public CommandLineRunner ensureMealDetailsPrimaryKey(JdbcTemplate jdbcTemplate) {
         return args -> {
             try {

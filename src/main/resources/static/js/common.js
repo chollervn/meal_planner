@@ -192,7 +192,15 @@ const Storage = {
 
   get(key) {
     const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : null;
+    if (!value) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
   },
 
   remove(key) {

@@ -10,6 +10,7 @@ public class UserResponse {
     private Float bmi;
     private String userImage;
     private String role;
+    private String accessToken;
 
     public UserResponse() {}
 
@@ -96,5 +97,13 @@ public class UserResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 }

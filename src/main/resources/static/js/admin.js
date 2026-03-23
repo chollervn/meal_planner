@@ -8,8 +8,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAdminDashboard() {
   const user = Storage.get('user');
+  const token = localStorage.getItem('authToken') || user?.accessToken;
   if (!user || String(user.role || '').toUpperCase() !== 'ADMIN') {
     Navigation.navigate(Navigation.pages.dashboard);
+    return;
+  }
+
+  if (!token) {
+    alert('Vui lòng đăng nhập lại để truy cập trang quản trị');
+    Navigation.navigate(Navigation.pages.login);
     return;
   }
 

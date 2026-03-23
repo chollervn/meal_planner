@@ -99,20 +99,20 @@ public class ScheduleService {
 
     // Lấy tất cả meals trong schedule của user
     public List<ScheduleMeal> getScheduleMeals(Integer userId) {
-        Schedule schedule = getScheduleByUserId(userId);
+        Schedule schedule = getOrCreateSchedule(userId);
         return scheduleMealRepository.findByScheduleScheduleId(schedule.getScheduleId());
     }
 
     // Lấy meals trong khoảng thời gian (tuần)
     public List<ScheduleMeal> getScheduleMealsByDateRange(Integer userId, LocalDate startDate, LocalDate endDate) {
-        Schedule schedule = getScheduleByUserId(userId);
+        Schedule schedule = getOrCreateSchedule(userId);
         return scheduleMealRepository.findByScheduleIdAndDateBetween(
                 schedule.getScheduleId(), startDate, endDate);
     }
 
     // Lấy meal của một ngày cụ thể
     public ScheduleMeal getMealByDate(Integer userId, LocalDate date) {
-        Schedule schedule = getScheduleByUserId(userId);
+        Schedule schedule = getOrCreateSchedule(userId);
         return scheduleMealRepository.findByScheduleIdAndDate(schedule.getScheduleId(), date)
                 .orElse(null);
     }

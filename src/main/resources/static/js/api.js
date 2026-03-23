@@ -4,10 +4,49 @@
 (function () {
   const API_BASE_URL = window.API_BASE_URL || window.location.origin;
 
+  function normalizeToken(value) {
+    if (!value) {
+      return null;
+    }
+
+    let token = String(value).trim();
+
+    if (token.toLowerCase().startsWith('bearer ')) {
+      token = token.slice(7).trim();
+    }
+
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1);
+    }
+
+    return token || null;
+  }
+
+  function getAccessToken() {
+    const token = normalizeToken(localStorage.getItem('authToken'));
+    if (token && token !== 'null' && token !== 'undefined') {
+      return token;
+    }
+
+    try {
+      const rawUser = localStorage.getItem('user');
+      if (!rawUser) {
+        return null;
+      }
+
+      const user = JSON.parse(rawUser);
+      return normalizeToken(user?.accessToken || null);
+    } catch (error) {
+      return null;
+    }
+  }
+
   async function request(path, options) {
+    const token = getAccessToken();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options && options.headers ? options.headers : {})
       },
       ...options
@@ -19,7 +58,9 @@
     } catch (error) {
       payload = {
         success: false,
-        message: 'Phản hồi không hợp lệ từ server'
+        message: response.status === 401 || response.status === 403
+          ? 'Phiên đăng nhập đã hết hạn hoặc không có quyền truy cập'
+          : 'Phản hồi không hợp lệ từ server'
       };
     }
 

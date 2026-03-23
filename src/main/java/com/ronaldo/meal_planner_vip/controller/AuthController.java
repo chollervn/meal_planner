@@ -6,6 +6,7 @@ import com.ronaldo.meal_planner_vip.dto.ResetPasswordRequest;
 import com.ronaldo.meal_planner_vip.dto.UserResponse;
 import com.ronaldo.meal_planner_vip.dto.UsersCreationRequest;
 import com.ronaldo.meal_planner_vip.entity.Users;
+import com.ronaldo.meal_planner_vip.security.JwtService;
 import com.ronaldo.meal_planner_vip.service.AuthService;
 import com.ronaldo.meal_planner_vip.service.UsersService;
 import jakarta.validation.Valid;
@@ -22,11 +23,16 @@ public class AuthController {
     @Autowired
     private UsersService usersService;
 
+    @Autowired
+    private JwtService jwtService;
+
     // Đăng nhập
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(@Valid @RequestBody LoginRequest request) {
         Users user = authService.authenticate(request);
-        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công!", usersService.toUserResponse(user)));
+        UserResponse userResponse = usersService.toUserResponse(user);
+        userResponse.setAccessToken(jwtService.generateToken(user));
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công!", userResponse));
     }
 
     // Đăng ký
