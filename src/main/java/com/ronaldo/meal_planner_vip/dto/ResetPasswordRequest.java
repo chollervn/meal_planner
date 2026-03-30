@@ -10,7 +10,7 @@ public class ResetPasswordRequest {
     private String email;
 
     @NotBlank(message = "Mật khẩu mới không được để trống")
-    @Size(min = 8, message = "Mật khẩu tối thiểu 8 ký tự")
+    @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
     private String newPassword;
 
     public String getEmail() {

@@ -7,6 +7,28 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  gap: 20px;
+}
+
+.header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-box input {
+  width: min(420px, 90vw);
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid #fecdd3;
+  background: #fff;
+  color: #111827;
+  outline: none;
+}
+
+.search-box input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
 }
 
 .title {
@@ -135,6 +157,18 @@
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
+  }
+
+  .header-main {
+    width: 100%;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .search-box input {
+    width: 100%;
   }
 
   .meal-row {

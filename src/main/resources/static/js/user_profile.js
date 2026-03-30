@@ -54,6 +54,7 @@ function fillProfile(profile) {
     if (avatar) {
       avatar.innerHTML = `<img src="${profile.userImage}" alt="Avatar">`;
     }
+    Storage.set('userAvatar', profile.userImage);
   }
 }
 
@@ -100,8 +101,7 @@ async function saveProfile() {
     username: document.getElementById('userName').value.trim(),
     age: toNullableNumber(document.getElementById('userAge').value),
     heightCm: toNullableNumber(document.getElementById('userHeight').value),
-    weightKg: toNullableNumber(document.getElementById('userWeight').value),
-    userImage: Storage.get('userAvatar') || null
+    weightKg: toNullableNumber(document.getElementById('userWeight').value)
   };
 
   if (!payload.username || payload.username.length < 2) {
@@ -109,17 +109,17 @@ async function saveProfile() {
     return;
   }
 
-  if (payload.age !== null && (payload.age < 1 || payload.age > 120)) {
+  if (payload.age !== null && (payload.age < 1 || payload.age > 110)) {
     alert('Tuổi không hợp lệ');
     return;
   }
 
-  if (payload.heightCm !== null && (payload.heightCm < 50 || payload.heightCm > 300)) {
+  if (payload.heightCm !== null && (payload.heightCm < 50 || payload.heightCm > 250)) {
     alert('Chiều cao không hợp lệ');
     return;
   }
 
-  if (payload.weightKg !== null && (payload.weightKg < 10 || payload.weightKg > 500)) {
+  if (payload.weightKg !== null && (payload.weightKg < 10 || payload.weightKg > 250)) {
     alert('Cân nặng không hợp lệ');
     return;
   }
@@ -152,6 +152,7 @@ async function saveProfile() {
     renderBMI(result.data.bmi);
     flashSavedState();
   } catch (error) {
+    console.error('saveProfile error:', error);
     alert('Có lỗi xảy ra, vui lòng thử lại');
   }
 }
@@ -169,8 +170,7 @@ function renderBMI(bmiValue) {
   }
 
   const status = BMICalculator.getStatus(bmi);
-  const emoji = BMICalculator.getEmoji(bmi);
-  bmiInput.value = `${bmi.toFixed(1)} - ${status.label} ${emoji}`;
+  bmiInput.value = `${bmi.toFixed(1)} - ${status.label}`;
 }
 
 function flashSavedState() {
@@ -192,6 +192,12 @@ function flashSavedState() {
 }
 
 function handleAvatarUpload(event) {
+  const user = Storage.get('user');
+  if (!user || !user.userId) {
+    Navigation.navigate(Navigation.pages.login);
+    return;
+  }
+
   const file = event.target.files?.[0];
   if (!file) {
     return;
@@ -207,16 +213,44 @@ function handleAvatarUpload(event) {
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (loadEvent) => {
-    const base64 = loadEvent.target.result;
+  uploadAvatar(user.userId, file);
+}
+
+async function uploadAvatar(userId, file) {
+  try {
+    const result = await ApiService.uploadUserAvatar(userId, file);
+    if (!result?.success) {
+      showApiAlert(result);
+      return;
+    }
+
+    let avatarUrl = result?.data?.userImage || null;
+
+    if (!avatarUrl) {
+      const profileResult = await ApiService.getUserById(userId);
+      if (profileResult?.success) {
+        avatarUrl = profileResult?.data?.userImage || null;
+      }
+    }
+
+    if (!avatarUrl) {
+      alert('Tải ảnh thất bại, vui lòng thử lại');
+      return;
+    }
+
     const avatar = document.querySelector('.avatar');
     if (avatar) {
-      avatar.innerHTML = `<img src="${base64}" alt="Avatar">`;
+      avatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
     }
-    Storage.set('userAvatar', base64);
-  };
-  reader.readAsDataURL(file);
+
+    Storage.set('userAvatar', avatarUrl);
+    Storage.set('userProfile', {
+      ...Storage.get('userProfile'),
+      userImage: avatarUrl
+    });
+  } catch (error) {
+    alert('Tải ảnh thất bại, vui lòng thử lại');
+  }
 }
 
 function toNullableNumber(value) {
@@ -228,6 +262,10 @@ function toNullableNumber(value) {
 }
 
 function showApiAlert(payload) {
+  if (!payload) {
+    alert('Có lỗi xảy ra, vui lòng thử lại');
+    return;
+  }
   const fields = ApiService.getFieldErrors(payload);
   if (fields) {
     alert(Object.values(fields).join('\n'));

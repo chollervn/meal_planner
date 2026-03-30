@@ -56,7 +56,7 @@ function renderWelcome(profile) {
   const userName = profile?.name || 'bạn';
 
   if (heading) {
-    heading.textContent = `Xin chào ${userName} 👋`;
+    heading.textContent = `Xin chào ${userName}` ;
   }
 
   if (!description) {
@@ -76,8 +76,8 @@ function renderWelcome(profile) {
   }
 
   const status = BMICalculator.getStatus(bmi);
-  const emoji = BMICalculator.getEmoji(bmi);
-  description.innerHTML = `Chỉ số BMI hiện tại của bạn đang ở mức <b>${status.label} ${emoji}</b>. ${getHealthAdvice(status.class)}`;
+
+  description.innerHTML = `Chỉ số BMI hiện tại của bạn <b>${status.label} </b>. ${getHealthAdvice(status.class)}`;
 }
 
 function getHealthAdvice(bmiClass) {

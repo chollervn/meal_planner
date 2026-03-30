@@ -35,6 +35,17 @@
             <label for="mealNameInput">Tên thực đơn</label>
             <input type="text" id="mealNameInput" placeholder="Nhập tên thực đơn">
         </div>
+        <div class="meal-image-box">
+            <label>Ảnh thực đơn</label>
+            <div class="meal-image-uploader">
+                <img id="mealImagePreview" src="/images/anh1.jpg" alt="Ảnh thực đơn">
+                <div class="meal-image-actions">
+                    <button id="mealImageUploadBtn" type="button">Chọn ảnh</button>
+                    <small id="mealImageFileName">Chưa chọn ảnh</small>
+                </div>
+                <input type="file" id="mealImageInput" accept="image/png,image/jpeg" hidden>
+            </div>
+        </div>
         <div class="calorie-box">
             <div>🍽️ Calo bữa đang chọn: <b id="currentMealCalories">0 kcal</b></div>
             <div>🔥 Tổng calo cả thực đơn: <b id="totalMealCalories">0 kcal</b></div>

@@ -142,6 +142,48 @@
       });
     },
 
+    async uploadUserAvatar(userId, file) {
+      const token = getAccessToken();
+      const attempts = [
+        { method: 'POST', field: 'file' },
+        { method: 'PUT', field: 'file' },
+        { method: 'POST', field: 'avatar' },
+        { method: 'PUT', field: 'avatar' }
+      ];
+
+      for (const attempt of attempts) {
+        const formData = new FormData();
+        formData.append(attempt.field, file);
+
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/avatar`, {
+          method: attempt.method,
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: formData
+        });
+
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = null;
+        }
+
+        if (response.ok && payload?.success) {
+          return payload;
+        }
+
+        const message = String(payload?.message || '');
+        const isInvalidMultipart = message.includes("key 'file'") || message.includes('upload không hợp lệ');
+        if (!isInvalidMultipart && response.status !== 404 && response.status !== 405) {
+          return payload || { success: false, message: 'Tải ảnh thất bại' };
+        }
+      }
+
+      return { success: false, message: 'Tải ảnh thất bại, vui lòng thử lại' };
+    },
+
     getFoods() {
       return request('/foods');
     },
@@ -169,11 +211,52 @@
       return request(`/meals/type/${encodeURIComponent(type)}`);
     },
 
+    searchMealsByName(keyword) {
+      return request(`/meals/search/fuzzy${toQuery({ keyword })}`);
+    },
+
     createMeal(data) {
       return request('/meals', {
         method: 'POST',
         body: JSON.stringify(data)
       });
+    },
+
+    async uploadMealImageForMeal(mealId, file) {
+      const token = getAccessToken();
+      const attempts = ['file', 'mealImage'];
+
+      for (const field of attempts) {
+        const formData = new FormData();
+        formData.append(field, file);
+
+        const response = await fetch(`${API_BASE_URL}/meals/${mealId}/image`, {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: formData
+        });
+
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = null;
+        }
+
+        if (response.ok && payload?.success) {
+          return payload;
+        }
+
+        const message = String(payload?.message || '');
+        const isInvalidMultipart = message.includes("key 'file'") || message.includes("key 'mealImage'");
+        if (!isInvalidMultipart && response.status !== 404 && response.status !== 405) {
+          return payload || { success: false, message: 'Tải ảnh thất bại' };
+        }
+      }
+
+      return { success: false, message: 'Tải ảnh thất bại, vui lòng thử lại' };
     },
 
     applyMealToSchedule(data) {

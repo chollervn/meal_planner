@@ -227,11 +227,8 @@ const BMICalculator = {
     return { label: 'Béo phì', class: 'over' };
   },
 
-  getEmoji(bmi) {
-    if (bmi < 18.5) return '😟';
-    if (bmi < 25) return '😎';
-    if (bmi < 30) return '😅';
-    return '😰';
+  getEmoji() {
+    return '';
   }
 };
 

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,6 +25,20 @@ public class MealController {
     public ResponseEntity<ApiResponse<MealTemplate>> createMeal(@Valid @RequestBody MealTemplateRequest request) {
         MealTemplate meal = mealTemplateService.createMealTemplate(request);
         return ResponseEntity.ok(ApiResponse.success("Tạo meal thành công!", meal));
+    }
+
+    @PostMapping("/{mealId}/image")
+    public ResponseEntity<ApiResponse<MealTemplate>> uploadMealImage(
+            @PathVariable Integer mealId,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "mealImage", required = false) MultipartFile mealImage) {
+        MultipartFile targetFile = file != null && !file.isEmpty() ? file : mealImage;
+        if (targetFile == null || targetFile.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng gửi key 'file' hoặc 'mealImage' dạng File"));
+        }
+
+        MealTemplate meal = mealTemplateService.updateMealImage(mealId, targetFile);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật ảnh meal thành công!", meal));
     }
 
     // Lấy tất cả meal templates
@@ -72,6 +87,12 @@ public class MealController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<MealTemplate>>> searchMeals(@RequestParam String name) {
         List<MealTemplate> meals = mealTemplateService.searchMealByName(name);
+        return ResponseEntity.ok(ApiResponse.success(meals));
+    }
+
+    @GetMapping("/search/fuzzy")
+    public ResponseEntity<ApiResponse<List<MealTemplate>>> searchMealsFuzzy(@RequestParam String keyword) {
+        List<MealTemplate> meals = mealTemplateService.searchMealByNameFuzzy(keyword);
         return ResponseEntity.ok(ApiResponse.success(meals));
     }
 

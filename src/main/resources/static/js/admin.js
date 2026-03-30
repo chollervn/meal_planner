@@ -108,8 +108,8 @@ async function loadUsers() {
           <td>${escapeHtml(u.email || '-')}</td>
           <td>${u.age ?? '-'}</td>
           <td><span class="badge ${bmiClass}">${bmi ? bmi.toFixed(1) : '-'} ${bmiLabel}</span></td>
-          <td>-</td>
-          <td>-</td>
+          <td id="usedMeals-${u.userId}">Dang tai...</td>
+          <td id="favoriteMeal-${u.userId}">Dang tai...</td>
           <td>
             <button class="view-btn" data-view-id="${u.userId}">Xem</button>
             <button class="view-btn" data-del-id="${u.userId}" style="background:#ef4444;margin-left:6px;">Xóa</button>
@@ -117,6 +117,8 @@ async function loadUsers() {
         </tr>
       `;
     }).join('');
+
+    await hydrateUserMealUsage(users);
 
     tbody.querySelectorAll('button[data-view-id]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -134,6 +136,54 @@ async function loadUsers() {
   } catch (error) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tải dữ liệu thất bại</td></tr>';
   }
+}
+
+async function hydrateUserMealUsage(users) {
+  if (!Array.isArray(users) || !users.length) {
+    return;
+  }
+
+  await Promise.all(users.map(async (user) => {
+    const usedEl = document.getElementById(`usedMeals-${user.userId}`);
+    const favoriteEl = document.getElementById(`favoriteMeal-${user.userId}`);
+
+    if (!usedEl || !favoriteEl) {
+      return;
+    }
+
+    try {
+      const result = await ApiService.getUserSchedule(user.userId);
+      const items = result?.success && Array.isArray(result.data) ? result.data : [];
+
+      usedEl.textContent = String(items.length);
+
+      if (!items.length) {
+        favoriteEl.textContent = '-';
+        return;
+      }
+
+      const mealCounter = new Map();
+      items.forEach((item) => {
+        const mealName = item?.mealTemplate?.mealName || item?.mealTemplate?.idmf || 'Meal';
+        mealCounter.set(mealName, (mealCounter.get(mealName) || 0) + 1);
+      });
+
+      let topMealName = '-';
+      let topCount = 0;
+
+      mealCounter.forEach((count, mealName) => {
+        if (count > topCount) {
+          topCount = count;
+          topMealName = mealName;
+        }
+      });
+
+      favoriteEl.textContent = topCount > 0 ? `${topMealName} (${topCount})` : '-';
+    } catch (error) {
+      usedEl.textContent = '-';
+      favoriteEl.textContent = '-';
+    }
+  }));
 }
 
 async function deleteUser(userId) {

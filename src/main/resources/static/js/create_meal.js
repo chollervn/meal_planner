@@ -5,6 +5,8 @@
 let currentMealType = 'breakfast';
 let foods = [];
 let foodsLoaded = false;
+let selectedMealImageFile = null;
+let selectedMealImagePreviewUrl = null;
 const mealFoods = {
   breakfast: [],
   lunch: [],
@@ -16,10 +18,62 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupMealTabs();
   setupModal();
   setupFoodLibrary();
+  setupMealImageUpload();
   setupSaveButton();
   await loadFoods();
   updateTargetCalories();
 });
+
+function setupMealImageUpload() {
+  const uploadBtn = document.getElementById('mealImageUploadBtn');
+  const input = document.getElementById('mealImageInput');
+
+  if (uploadBtn && input) {
+    uploadBtn.addEventListener('click', () => input.click());
+    input.addEventListener('change', handleMealImageSelected);
+  }
+}
+
+function handleMealImageSelected(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Kich thuoc file qua lon, toi da 5MB');
+    event.target.value = '';
+    return;
+  }
+
+  if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
+    alert('Chi chap nhan PNG hoac JPG');
+    event.target.value = '';
+    return;
+  }
+
+  selectedMealImageFile = file;
+  updateMealImagePreview(file);
+}
+
+function updateMealImagePreview(file) {
+  const preview = document.getElementById('mealImagePreview');
+  const fileName = document.getElementById('mealImageFileName');
+
+  if (selectedMealImagePreviewUrl) {
+    URL.revokeObjectURL(selectedMealImagePreviewUrl);
+    selectedMealImagePreviewUrl = null;
+  }
+
+  if (preview && file) {
+    selectedMealImagePreviewUrl = URL.createObjectURL(file);
+    preview.src = selectedMealImagePreviewUrl;
+  }
+
+  if (fileName) {
+    fileName.textContent = file ? file.name : 'Chua chon anh';
+  }
+}
 
 function setupMealNameInput() {
   const mealNameInput = document.getElementById('mealNameInput');
@@ -445,20 +499,49 @@ async function saveMealTemplate() {
       return;
     }
 
+    let savedMeal = result.data || null;
+    let imageUploadFailed = false;
+
+    if (selectedMealImageFile && savedMeal?.idmf) {
+      const imageUpdatedMeal = await uploadMealImageForMealIfNeeded(savedMeal.idmf);
+      if (imageUpdatedMeal === false) {
+        imageUploadFailed = true;
+      } else if (imageUpdatedMeal) {
+        savedMeal = imageUpdatedMeal;
+      }
+    }
+
     const savedMeals = Storage.get('customMeals') || [];
     savedMeals.push({
-      id: result.data?.idmf,
-      name: result.data?.mealName || payload.mealName,
-      totalCalo: Math.round(result.data?.calo || totalCalo),
+      id: savedMeal?.idmf,
+      name: savedMeal?.mealName || payload.mealName,
+      totalCalo: Math.round(savedMeal?.calo || totalCalo),
+      mealImage: savedMeal?.mealImage || null,
       foods: details,
       createdAt: new Date().toISOString()
     });
     Storage.set('customMeals', savedMeals);
 
-    alert('Lưu thực đơn thành công');
+    if (imageUploadFailed) {
+      alert('Lưu thực đơn thành công nhưng tải ảnh thất bại');
+    } else {
+      alert('Lưu thực đơn thành công');
+    }
     Navigation.navigate(Navigation.pages.myMeal);
   } catch (error) {
     alert('Có lỗi khi lưu thực đơn');
+  }
+}
+
+async function uploadMealImageForMealIfNeeded(mealId) {
+  try {
+    const uploadResult = await ApiService.uploadMealImageForMeal(mealId, selectedMealImageFile);
+    if (!uploadResult?.success || !uploadResult.data) {
+      return false;
+    }
+    return uploadResult.data;
+  } catch (error) {
+    return false;
   }
 }
 

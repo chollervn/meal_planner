@@ -12,10 +12,17 @@ import com.ronaldo.meal_planner_vip.repository.MealTemplateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class MealTemplateService {
@@ -147,6 +154,26 @@ public class MealTemplateService {
         return mealTemplateRepository.findByMealNameContainingIgnoreCase(name);
     }
 
+    public List<MealTemplate> searchMealByNameFuzzy(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return mealTemplateRepository.findAll();
+        }
+
+        String normalizedKeyword = normalizeText(keyword);
+        if (normalizedKeyword.isEmpty()) {
+            return mealTemplateRepository.findAll();
+        }
+
+        int threshold = Math.max(1, normalizedKeyword.length() / 3);
+
+        return mealTemplateRepository.findAll().stream()
+                .map(meal -> new MealSearchScore(meal, scoreMealName(normalizeText(meal.getMealName()), normalizedKeyword, threshold)))
+                .filter(item -> item.score() >= 0)
+                .sorted(Comparator.comparingInt(MealSearchScore::score))
+                .map(MealSearchScore::meal)
+                .collect(Collectors.toList());
+    }
+
     // Cập nhật meal template
     @Transactional
     public MealTemplate updateMealTemplate(Integer mealId, MealTemplateRequest request) {
@@ -247,5 +274,138 @@ public class MealTemplateService {
             meal.getFiber(),
             meal.getCarb()
         );
+    }
+
+    @Transactional
+    public MealTemplate updateMealImage(Integer mealId, MultipartFile file) {
+        MealTemplate meal = getMealTemplateById(mealId);
+        meal.setMealImage(storeMealImageFile(file));
+        return mealTemplateRepository.save(meal);
+    }
+
+    private String storeMealImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Vui lòng chọn ảnh");
+        }
+
+        String extension = resolveImageExtension(file);
+
+        long maxSize = 5L * 1024 * 1024;
+        if (file.getSize() > maxSize) {
+            throw new BadRequestException("Kích thước ảnh tối đa 5MB");
+        }
+
+        try {
+            Path uploadDir = Paths.get("uploads", "meals").toAbsolutePath().normalize();
+            Files.createDirectories(uploadDir);
+
+            String fileName = "meal_" + UUID.randomUUID().toString().replace("-", "") + extension;
+            Path target = uploadDir.resolve(fileName);
+
+            file.transferTo(target.toFile());
+
+            return "/uploads/meals/" + fileName;
+        } catch (Exception ex) {
+            throw new BadRequestException("Không thể lưu ảnh, vui lòng thử lại");
+        }
+    }
+
+    private String resolveImageExtension(MultipartFile file) {
+        String contentType = String.valueOf(file.getContentType()).toLowerCase(Locale.ROOT);
+        if ("image/jpeg".equals(contentType) || "image/jpg".equals(contentType) || "image/pjpeg".equals(contentType)) {
+            return ".jpg";
+        }
+        if ("image/png".equals(contentType) || "image/x-png".equals(contentType)) {
+            return ".png";
+        }
+
+        String fileName = String.valueOf(file.getOriginalFilename()).toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            return ".jpg";
+        }
+        if (fileName.endsWith(".png")) {
+            return ".png";
+        }
+
+        throw new BadRequestException("Chỉ chấp nhận ảnh JPG hoặc PNG");
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+
+        return normalized;
+    }
+
+    private int scoreMealName(String normalizedMealName, String normalizedKeyword, int threshold) {
+        if (normalizedMealName == null || normalizedMealName.isEmpty()) {
+            return -1;
+        }
+
+        if (normalizedMealName.contains(normalizedKeyword)) {
+            return 0;
+        }
+
+        String[] words = normalizedMealName.split(" ");
+        int bestDistance = Integer.MAX_VALUE;
+        for (String word : words) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            int distance = levenshteinDistance(word, normalizedKeyword);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+            }
+        }
+
+        if (bestDistance <= threshold) {
+            return bestDistance + 10;
+        }
+
+        int fullDistance = levenshteinDistance(normalizedMealName, normalizedKeyword);
+        if (fullDistance <= Math.max(2, threshold + 2)) {
+            return fullDistance + 20;
+        }
+
+        return -1;
+    }
+
+    private int levenshteinDistance(String left, String right) {
+        int leftLength = left.length();
+        int rightLength = right.length();
+
+        int[][] dp = new int[leftLength + 1][rightLength + 1];
+
+        for (int i = 0; i <= leftLength; i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= rightLength; j++) {
+            dp[0][j] = j;
+        }
+
+        for (int i = 1; i <= leftLength; i++) {
+            for (int j = 1; j <= rightLength; j++) {
+                int cost = left.charAt(i - 1) == right.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(
+                        Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + cost
+                );
+            }
+        }
+
+        return dp[leftLength][rightLength];
+    }
+
+    private record MealSearchScore(MealTemplate meal, int score) {
     }
 }

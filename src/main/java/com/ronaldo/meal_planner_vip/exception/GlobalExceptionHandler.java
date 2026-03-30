@@ -8,6 +8,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,6 +44,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleNoResourceFoundException(NoResourceFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("Không tìm thấy tài nguyên"));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Kích thước ảnh vượt quá giới hạn cho phép"));
+    }
+
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<ApiResponse<Object>> handleMultipartException(Exception exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Dữ liệu upload không hợp lệ, vui lòng gửi key 'file' dạng File"));
     }
 
     @ExceptionHandler(Exception.class)

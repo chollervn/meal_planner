@@ -5,11 +5,13 @@ import com.ronaldo.meal_planner_vip.dto.UserResponse;
 import com.ronaldo.meal_planner_vip.dto.UserUpdateRequest;
 import com.ronaldo.meal_planner_vip.dto.UsersCreationRequest;
 import com.ronaldo.meal_planner_vip.entity.Users;
+import com.ronaldo.meal_planner_vip.exception.BadRequestException;
 import com.ronaldo.meal_planner_vip.service.UsersService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -54,6 +56,32 @@ public class UsersController {
             @Valid @RequestBody UserUpdateRequest request) {
         Users user = usersService.updateUser(userId, request);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công!", usersService.toUserResponse(user)));
+    }
+
+    @PutMapping("/{userId}/avatar")
+    public ResponseEntity<ApiResponse<UserResponse>> updateAvatar(
+            @PathVariable Integer userId,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
+        MultipartFile targetFile = file != null && !file.isEmpty() ? file : avatar;
+        if (targetFile == null || targetFile.isEmpty()) {
+            throw new BadRequestException("Vui lòng gửi key 'file' hoặc 'avatar' dạng File");
+        }
+        Users user = usersService.updateUserAvatar(userId, targetFile);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật ảnh đại diện thành công!", usersService.toUserResponse(user)));
+    }
+
+    @PostMapping("/{userId}/avatar")
+    public ResponseEntity<ApiResponse<UserResponse>> updateAvatarPost(
+            @PathVariable Integer userId,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
+        MultipartFile targetFile = file != null && !file.isEmpty() ? file : avatar;
+        if (targetFile == null || targetFile.isEmpty()) {
+            throw new BadRequestException("Vui lòng gửi key 'file' hoặc 'avatar' dạng File");
+        }
+        Users user = usersService.updateUserAvatar(userId, targetFile);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật ảnh đại diện thành công!", usersService.toUserResponse(user)));
     }
 
     // Xóa user

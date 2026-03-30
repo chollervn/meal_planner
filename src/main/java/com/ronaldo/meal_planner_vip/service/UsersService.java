@@ -14,8 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,14 +72,6 @@ public class UsersService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user với ID: " + userId));
     }
 
-    // Lấy user theo email
-    public Users getUserByEmail(String email) {
-        Users user = usersRepository.findByEmail(email);
-        if (user == null) {
-            throw new ResourceNotFoundException("Không tìm thấy user với email: " + email);
-        }
-        return user;
-    }
 
     // Cập nhật thông tin user
     public Users updateUser(Integer userId, UserUpdateRequest request) {
@@ -99,6 +97,56 @@ public class UsersService {
         user.setBmi(calculateBMI(user.getHeightCm(), user.getWeightKg()));
 
         return usersRepository.save(user);
+    }
+
+    public Users updateUserAvatar(Integer userId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Vui lòng chọn ảnh");
+        }
+
+        String extension = resolveImageExtension(file);
+
+        long maxSize = 5L * 1024 * 1024;
+        if (file.getSize() > maxSize) {
+            throw new BadRequestException("Kích thước ảnh tối đa 5MB");
+        }
+
+        Users user = getUserById(userId);
+
+        try {
+            Path uploadDir = Paths.get("uploads", "avatars").toAbsolutePath().normalize();
+            Files.createDirectories(uploadDir);
+
+            String fileName = "user_" + userId + "_" + UUID.randomUUID().toString().replace("-", "") + extension;
+            Path target = uploadDir.resolve(fileName);
+
+            file.transferTo(target.toFile());
+
+            user.setUserImage("/uploads/avatars/" + fileName);
+            return usersRepository.save(user);
+        } catch (Exception ex) {
+            throw new BadRequestException("Không thể lưu ảnh, vui lòng thử lại");
+        }
+    }
+
+    private String resolveImageExtension(MultipartFile file) {
+        String contentType = String.valueOf(file.getContentType()).toLowerCase(Locale.ROOT);
+        if ("image/jpeg".equals(contentType) || "image/jpg".equals(contentType) || "image/pjpeg".equals(contentType)) {
+            return ".jpg";
+        }
+        if ("image/png".equals(contentType) || "image/x-png".equals(contentType)) {
+            return ".png";
+        }
+
+        String fileName = String.valueOf(file.getOriginalFilename()).toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            return ".jpg";
+        }
+        if (fileName.endsWith(".png")) {
+            return ".png";
+        }
+
+        throw new BadRequestException("Chỉ chấp nhận ảnh JPG hoặc PNG");
     }
 
     // Xóa user

@@ -11,15 +11,15 @@ public class UserUpdateRequest {
     private String username;
 
     @Min(value = 1, message = "Tuổi phải lớn hơn 0")
-    @Max(value = 120, message = "Tuổi không hợp lệ")
+    @Max(value = 110, message = "Tuổi không hợp lệ")
     private Long age;
 
     @DecimalMin(value = "50.0", message = "Chiều cao tối thiểu là 50 cm")
-    @DecimalMax(value = "300.0", message = "Chiều cao không hợp lệ")
+    @DecimalMax(value = "250.0", message = "Chiều cao không hợp lệ")
     private Float heightCm;
 
     @DecimalMin(value = "10.0", message = "Cân nặng tối thiểu là 10 kg")
-    @DecimalMax(value = "500.0", message = "Cân nặng không hợp lệ")
+    @DecimalMax(value = "250.0", message = "Cân nặng không hợp lệ")
     private Float weightKg;
 
     private String userImage;

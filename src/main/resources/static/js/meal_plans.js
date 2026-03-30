@@ -3,6 +3,7 @@
  */
 
 let availableMeals = [];
+let searchDebounceTimer = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupMealPlansHandlers();
@@ -14,6 +15,19 @@ function setupMealPlansHandlers() {
   if (createBtn) {
     createBtn.addEventListener('click', () => {
       Navigation.navigate(Navigation.pages.createMeal);
+    });
+  }
+
+  const searchInput = document.getElementById('mealSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+
+      searchDebounceTimer = setTimeout(async () => {
+        await searchMealsByKeyword(searchInput.value);
+      }, 300);
     });
   }
 }
@@ -39,6 +53,33 @@ async function loadMeals() {
     renderMealRows(availableMeals);
   } catch (error) {
     renderError('Không tải được danh sách thực đơn từ backend.');
+  }
+}
+
+async function searchMealsByKeyword(keyword) {
+  const normalizedKeyword = normalizeText(keyword).trim();
+
+  if (!normalizedKeyword) {
+    renderMealRows(availableMeals);
+    return;
+  }
+
+  try {
+    const result = await ApiService.searchMealsByName(keyword);
+    if (!result?.success || !Array.isArray(result.data)) {
+      renderError('Không tìm được thực đơn phù hợp.');
+      return;
+    }
+
+    const searchedMeals = await enrichMealNutrition((result.data || []).map(normalizeMeal));
+    if (!searchedMeals.length) {
+      renderError('Không tìm thấy thực đơn gần đúng với từ khóa.');
+      return;
+    }
+
+    renderMealRows(searchedMeals);
+  } catch (error) {
+    renderError('Không tìm được thực đơn phù hợp.');
   }
 }
 
@@ -209,4 +250,15 @@ function computeTotalsFromDetails(details) {
     acc.carb += Number(food.carb || 0) * ratio;
     return acc;
   }, { calo: 0, protein: 0, fat: 0, carb: 0 });
+}
+
+function normalizeText(value) {
+  return (value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

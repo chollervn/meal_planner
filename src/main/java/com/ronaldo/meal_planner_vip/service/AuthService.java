@@ -52,12 +52,7 @@ public class AuthService {
         usersRepository.save(user);
     }
 
-    // Kiểm tra user có phải admin không
-    public boolean isAdmin(Integer userId) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại!"));
-        return "ADMIN".equals(user.getRole());
-    }
+
 
     private boolean isPasswordValid(String rawPassword, Users user) {
         String storedPassword = user.getPassword();
