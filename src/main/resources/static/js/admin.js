@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAdminDashboard();
 });
 
+const USERS_PER_PAGE = 5;
+let currentUserPage = 1;
+let adminUsersCache = [];
+let filteredAdminUsers = [];
+let adminSearchDebounceTimer = null;
+
 async function loadAdminDashboard() {
   const user = Storage.get('user');
   const token = localStorage.getItem('authToken') || user?.accessToken;
@@ -21,8 +27,28 @@ async function loadAdminDashboard() {
   }
 
   setupDetailModal();
+  setupAdminSearchHandlers();
 
   await Promise.all([loadStats(), loadUsers()]);
+}
+
+function setupAdminSearchHandlers() {
+  const searchInput = document.getElementById('adminUserSearchInput');
+  if (!searchInput) {
+    return;
+  }
+
+  searchInput.addEventListener('input', () => {
+    if (adminSearchDebounceTimer) {
+      clearTimeout(adminSearchDebounceTimer);
+    }
+
+    adminSearchDebounceTimer = setTimeout(() => {
+      currentUserPage = 1;
+      applyUserSearch(searchInput.value);
+      renderUsersTable();
+    }, 250);
+  });
 }
 
 function setupDetailModal() {
@@ -87,16 +113,55 @@ async function loadUsers() {
     const result = await ApiService.getAdminUsers();
     if (!result?.success || !Array.isArray(result.data)) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không có dữ liệu</td></tr>';
+      adminUsersCache = [];
+      filteredAdminUsers = [];
+      clearUsersPagination();
       return;
     }
 
     const users = result.data.filter((u) => String(u.role || '').toUpperCase() !== 'ADMIN');
     if (!users.length) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Chưa có người dùng</td></tr>';
+      adminUsersCache = [];
+      filteredAdminUsers = [];
+      clearUsersPagination();
       return;
     }
 
-    tbody.innerHTML = users.map((u) => {
+    adminUsersCache = users;
+    const searchInput = document.getElementById('adminUserSearchInput');
+    applyUserSearch(searchInput ? searchInput.value : '');
+    renderUsersTable();
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tải dữ liệu thất bại</td></tr>';
+    adminUsersCache = [];
+    filteredAdminUsers = [];
+    clearUsersPagination();
+  }
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById('adminUsersBody');
+  if (!tbody) {
+    return;
+  }
+
+  const users = filteredAdminUsers;
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không tìm thấy người dùng phù hợp</td></tr>';
+    clearUsersPagination();
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+  if (currentUserPage > totalPages) {
+    currentUserPage = totalPages;
+  }
+
+  const start = (currentUserPage - 1) * USERS_PER_PAGE;
+  const usersOnPage = users.slice(start, start + USERS_PER_PAGE);
+
+  tbody.innerHTML = usersOnPage.map((u) => {
       const bmi = Number(u.bmi || 0);
       const bmiClass = getBmiBadgeClass(bmi);
       const bmiLabel = BMICalculator.getStatus(bmi).label;
@@ -116,25 +181,89 @@ async function loadUsers() {
           </td>
         </tr>
       `;
-    }).join('');
+  }).join('');
 
-    await hydrateUserMealUsage(users);
+  hydrateUserMealUsage(usersOnPage);
 
-    tbody.querySelectorAll('button[data-view-id]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.getAttribute('data-view-id'));
-        await viewUserDetail(id);
-      });
+  renderUsersPagination(users.length);
+
+  tbody.querySelectorAll('button[data-view-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.getAttribute('data-view-id'));
+      await viewUserDetail(id);
     });
+  });
 
-    tbody.querySelectorAll('button[data-del-id]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.getAttribute('data-del-id'));
-        await deleteUser(id);
-      });
+  tbody.querySelectorAll('button[data-del-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.getAttribute('data-del-id'));
+      await deleteUser(id);
     });
-  } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tải dữ liệu thất bại</td></tr>';
+  });
+}
+
+function applyUserSearch(keyword) {
+  const normalizedKeyword = normalizeText(keyword);
+
+  if (!normalizedKeyword) {
+    filteredAdminUsers = [...adminUsersCache];
+    return;
+  }
+
+  filteredAdminUsers = adminUsersCache.filter((user) => {
+    const username = normalizeText(user?.username || '');
+    return username.includes(normalizedKeyword);
+  });
+}
+
+function renderUsersPagination(totalItems) {
+  const tableBox = document.querySelector('.table-box');
+  if (!tableBox) {
+    return;
+  }
+
+  let pagination = document.getElementById('adminUsersPagination');
+  if (!pagination) {
+    pagination = document.createElement('div');
+    pagination.id = 'adminUsersPagination';
+    pagination.className = 'pagination-bar';
+    tableBox.appendChild(pagination);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / USERS_PER_PAGE));
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+
+  pagination.innerHTML = `
+    <button type="button" class="page-btn" data-page="prev" ${currentUserPage === 1 ? 'disabled' : ''}>← Trước</button>
+    <span class="page-info">Trang ${currentUserPage}/${totalPages}</span>
+    <button type="button" class="page-btn" data-page="next" ${currentUserPage === totalPages ? 'disabled' : ''}>Sau →</button>
+  `;
+
+  const prevBtn = pagination.querySelector('[data-page="prev"]');
+  const nextBtn = pagination.querySelector('[data-page="next"]');
+
+  prevBtn?.addEventListener('click', async () => {
+    if (currentUserPage > 1) {
+      currentUserPage -= 1;
+      renderUsersTable();
+    }
+  });
+
+  nextBtn?.addEventListener('click', async () => {
+    if (currentUserPage < totalPages) {
+      currentUserPage += 1;
+      renderUsersTable();
+    }
+  });
+}
+
+function clearUsersPagination() {
+  const pagination = document.getElementById('adminUsersPagination');
+  if (pagination) {
+    pagination.innerHTML = '';
   }
 }
 
@@ -251,4 +380,15 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

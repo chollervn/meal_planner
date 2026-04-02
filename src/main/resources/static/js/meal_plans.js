@@ -4,6 +4,9 @@
 
 let availableMeals = [];
 let searchDebounceTimer = null;
+const MEALS_PER_PAGE = 5;
+let currentMealPage = 1;
+let currentMealList = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupMealPlansHandlers();
@@ -50,6 +53,7 @@ async function loadMeals() {
     }
 
     availableMeals = await enrichMealNutrition((result.data || []).map(normalizeMeal));
+    currentMealPage = 1;
     renderMealRows(availableMeals);
   } catch (error) {
     renderError('Không tải được danh sách thực đơn từ backend.');
@@ -77,6 +81,7 @@ async function searchMealsByKeyword(keyword) {
       return;
     }
 
+    currentMealPage = 1;
     renderMealRows(searchedMeals);
   } catch (error) {
     renderError('Không tìm được thực đơn phù hợp.');
@@ -84,6 +89,16 @@ async function searchMealsByKeyword(keyword) {
 }
 
 function renderMealRows(meals) {
+  currentMealList = Array.isArray(meals) ? meals : [];
+
+  const totalPages = Math.max(1, Math.ceil(currentMealList.length / MEALS_PER_PAGE));
+  if (currentMealPage > totalPages) {
+    currentMealPage = totalPages;
+  }
+
+  const start = (currentMealPage - 1) * MEALS_PER_PAGE;
+  const pageMeals = currentMealList.slice(start, start + MEALS_PER_PAGE);
+
   const container = document.querySelector('.container');
   if (!container) {
     return;
@@ -106,12 +121,13 @@ function renderMealRows(meals) {
 
   container.querySelectorAll('.meal-row').forEach((row) => row.remove());
 
-  if (!meals.length) {
+  if (!currentMealList.length) {
+    clearMealPagination();
     renderError('Chưa có thực đơn nào.');
     return;
   }
 
-  meals.forEach((meal) => {
+  pageMeals.forEach((meal) => {
     const row = document.createElement('div');
     row.className = 'meal-row';
 
@@ -141,6 +157,8 @@ function renderMealRows(meals) {
 
     container.appendChild(row);
   });
+
+  renderMealPagination(currentMealList.length);
 }
 
 function formatMealType(type) {
@@ -180,6 +198,60 @@ function renderError(message) {
   }
 
   error.textContent = message;
+  clearMealPagination();
+}
+
+function renderMealPagination(totalItems) {
+  const container = document.querySelector('.container');
+  if (!container) {
+    return;
+  }
+
+  let pagination = document.getElementById('mealPlansPagination');
+  if (!pagination) {
+    pagination = document.createElement('div');
+    pagination.id = 'mealPlansPagination';
+    pagination.className = 'pagination-bar';
+    container.appendChild(pagination);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / MEALS_PER_PAGE));
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+
+  pagination.innerHTML = `
+    <button type="button" class="page-btn" data-page="prev" ${currentMealPage === 1 ? 'disabled' : ''}>← Trước</button>
+    <span class="page-info">Trang ${currentMealPage}/${totalPages}</span>
+    <button type="button" class="page-btn" data-page="next" ${currentMealPage === totalPages ? 'disabled' : ''}>Sau →</button>
+  `;
+
+  const prevBtn = pagination.querySelector('[data-page="prev"]');
+  const nextBtn = pagination.querySelector('[data-page="next"]');
+
+  prevBtn?.addEventListener('click', () => {
+    if (currentMealPage > 1) {
+      currentMealPage -= 1;
+      renderMealRows(currentMealList);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    if (currentMealPage < totalPages) {
+      currentMealPage += 1;
+      renderMealRows(currentMealList);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+}
+
+function clearMealPagination() {
+  const pagination = document.getElementById('mealPlansPagination');
+  if (pagination) {
+    pagination.innerHTML = '';
+  }
 }
 
 async function enrichMealNutrition(meals) {

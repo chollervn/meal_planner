@@ -70,6 +70,8 @@ public class MealTemplateService {
                 Foods food = foodRepository.findById(detailRequest.getFoodId())
                         .orElseThrow(() -> new ResourceNotFoundException("Food không tồn tại: " + detailRequest.getFoodId()));
 
+                float quantityInGrams = normalizeQuantityToGrams(detailRequest.getQuantity());
+
                 MealDetail detail = new MealDetail();
                 MealDetailId detailId = new MealDetailId(
                         meal.getIdmf(),
@@ -79,7 +81,7 @@ public class MealTemplateService {
                 detail.setId(detailId);
                 detail.setMealTemplate(meal);
                 detail.setFood(food);
-                detail.setQuantity(detailRequest.getQuantity());
+                detail.setQuantity(quantityInGrams);
                 try {
                     detail.setMealTime(MealDetail.MealTime.valueOf(detailRequest.getMealTime()));
                 } catch (IllegalArgumentException exception) {
@@ -89,7 +91,7 @@ public class MealTemplateService {
                 mealDetails.add(detail);
 
                 // Tính dinh dưỡng
-                float ratio = detailRequest.getQuantity() / 100f;
+                float ratio = quantityInGrams / 100f;
                 totalCalo += food.getCalories() * ratio;
                 totalProtein += food.getProtein() * ratio;
                 totalFat += food.getFat() * ratio;
@@ -111,14 +113,20 @@ public class MealTemplateService {
     }
 
     // Lấy tất cả meal templates
+    @Transactional
     public List<MealTemplate> getAllMealTemplates() {
-        return mealTemplateRepository.findAll();
+        List<MealTemplate> meals = mealTemplateRepository.findAll();
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+        return meals;
     }
 
     // Lấy meal template theo ID
+    @Transactional
     public MealTemplate getMealTemplateById(Integer id) {
-        return mealTemplateRepository.findById(id)
+        MealTemplate meal = mealTemplateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy meal template với ID: " + id));
+        syncMealNutritionFromDetails(meal, true);
+        return meal;
     }
 
     // Lấy chi tiết meal (bao gồm danh sách food)
@@ -134,39 +142,59 @@ public class MealTemplateService {
     }
 
     // Lấy meal templates theo BMI của user
+    @Transactional
     public List<MealTemplate> getMealsByUserBmi(Integer userId) {
         Float bmi = usersService.getUserBMI(userId);
-        return mealTemplateRepository.findMealsByUserBmi(bmi);
+        List<MealTemplate> meals = mealTemplateRepository.findMealsByUserBmi(bmi);
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+        return meals;
     }
 
     // Lấy meal templates theo BMI range
+    @Transactional
     public List<MealTemplate> getMealsByBmiRange(Float bmi) {
-        return mealTemplateRepository.findByBmiRange(bmi);
+        List<MealTemplate> meals = mealTemplateRepository.findByBmiRange(bmi);
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+        return meals;
     }
 
     // Lấy meal templates theo type
+    @Transactional
     public List<MealTemplate> getMealsByType(String type) {
-        return mealTemplateRepository.findByType(type);
+        List<MealTemplate> meals = mealTemplateRepository.findByType(type);
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+        return meals;
     }
 
     // Tìm kiếm meal theo tên
+    @Transactional
     public List<MealTemplate> searchMealByName(String name) {
-        return mealTemplateRepository.findByMealNameContainingIgnoreCase(name);
+        List<MealTemplate> meals = mealTemplateRepository.findByMealNameContainingIgnoreCase(name);
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+        return meals;
     }
 
+    @Transactional
     public List<MealTemplate> searchMealByNameFuzzy(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return mealTemplateRepository.findAll();
+            List<MealTemplate> meals = mealTemplateRepository.findAll();
+            meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+            return meals;
         }
 
         String normalizedKeyword = normalizeText(keyword);
         if (normalizedKeyword.isEmpty()) {
-            return mealTemplateRepository.findAll();
+            List<MealTemplate> meals = mealTemplateRepository.findAll();
+            meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+            return meals;
         }
 
         int threshold = Math.max(1, normalizedKeyword.length() / 3);
 
-        return mealTemplateRepository.findAll().stream()
+        List<MealTemplate> meals = mealTemplateRepository.findAll();
+        meals.forEach(meal -> syncMealNutritionFromDetails(meal, true));
+
+        return meals.stream()
                 .map(meal -> new MealSearchScore(meal, scoreMealName(normalizeText(meal.getMealName()), normalizedKeyword, threshold)))
                 .filter(item -> item.score() >= 0)
                 .sorted(Comparator.comparingInt(MealSearchScore::score))
@@ -211,6 +239,8 @@ public class MealTemplateService {
                 Foods food = foodRepository.findById(detailRequest.getFoodId())
                         .orElseThrow(() -> new ResourceNotFoundException("Food không tồn tại: " + detailRequest.getFoodId()));
 
+                float quantityInGrams = normalizeQuantityToGrams(detailRequest.getQuantity());
+
                 MealDetail detail = new MealDetail();
                 MealDetailId detailId = new MealDetailId(
                         meal.getIdmf(),
@@ -220,7 +250,7 @@ public class MealTemplateService {
                 detail.setId(detailId);
                 detail.setMealTemplate(meal);
                 detail.setFood(food);
-                detail.setQuantity(detailRequest.getQuantity());
+                detail.setQuantity(quantityInGrams);
                 try {
                     detail.setMealTime(MealDetail.MealTime.valueOf(detailRequest.getMealTime()));
                 } catch (IllegalArgumentException exception) {
@@ -229,7 +259,7 @@ public class MealTemplateService {
 
                 mealDetails.add(detail);
 
-                float ratio = detailRequest.getQuantity() / 100f;
+                float ratio = quantityInGrams / 100f;
                 totalCalo += food.getCalories() * ratio;
                 totalProtein += food.getProtein() * ratio;
                 totalFat += food.getFat() * ratio;
@@ -274,6 +304,20 @@ public class MealTemplateService {
             meal.getFiber(),
             meal.getCarb()
         );
+    }
+
+    @Transactional
+    public int recalculateAllMealNutrition() {
+        List<MealTemplate> meals = mealTemplateRepository.findAll();
+        int updatedCount = 0;
+
+        for (MealTemplate meal : meals) {
+            if (syncMealNutritionFromDetails(meal, true)) {
+                updatedCount += 1;
+            }
+        }
+
+        return updatedCount;
     }
 
     @Transactional
@@ -328,6 +372,74 @@ public class MealTemplateService {
         }
 
         throw new BadRequestException("Chỉ chấp nhận ảnh JPG hoặc PNG");
+    }
+
+    private boolean syncMealNutritionFromDetails(MealTemplate meal, boolean normalizeQuantity) {
+        List<MealDetail> details = mealDetailRepository.findByMealTemplateIdmf(meal.getIdmf());
+
+        float totalCalo = 0f;
+        float totalProtein = 0f;
+        float totalFat = 0f;
+        float totalFiber = 0f;
+        float totalCarb = 0f;
+        boolean detailsChanged = false;
+
+        for (MealDetail detail : details) {
+            if (detail == null || detail.getFood() == null) {
+                continue;
+            }
+
+            float quantityInGrams = normalizeQuantityToGrams(detail.getQuantity());
+            if (normalizeQuantity && hasDiff(detail.getQuantity(), quantityInGrams)) {
+                detail.setQuantity(quantityInGrams);
+                detailsChanged = true;
+            }
+
+            float ratio = quantityInGrams / 100f;
+            Foods food = detail.getFood();
+            totalCalo += valueOrZero(food.getCalories()) * ratio;
+            totalProtein += valueOrZero(food.getProtein()) * ratio;
+            totalFat += valueOrZero(food.getFat()) * ratio;
+            totalFiber += valueOrZero(food.getFiber()) * ratio;
+            totalCarb += valueOrZero(food.getCarb()) * ratio;
+        }
+
+        if (detailsChanged) {
+            mealDetailRepository.saveAll(details);
+        }
+
+        boolean mealChanged = hasDiff(meal.getCalo(), totalCalo)
+                || hasDiff(meal.getProtein(), totalProtein)
+                || hasDiff(meal.getFat(), totalFat)
+                || hasDiff(meal.getFiber(), totalFiber)
+                || hasDiff(meal.getCarb(), totalCarb);
+
+        if (mealChanged) {
+            meal.setCalo(totalCalo);
+            meal.setProtein(totalProtein);
+            meal.setFat(totalFat);
+            meal.setFiber(totalFiber);
+            meal.setCarb(totalCarb);
+            mealTemplateRepository.save(meal);
+        }
+
+        return detailsChanged || mealChanged;
+    }
+
+    private float normalizeQuantityToGrams(Float quantity) {
+        float normalized = valueOrZero(quantity);
+        if (normalized > 0f && normalized <= 20f) {
+            return normalized * 100f;
+        }
+        return normalized;
+    }
+
+    private float valueOrZero(Float value) {
+        return value == null ? 0f : value;
+    }
+
+    private boolean hasDiff(Float left, float right) {
+        return Math.abs(valueOrZero(left) - right) > 0.01f;
     }
 
     private String normalizeText(String value) {

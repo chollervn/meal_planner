@@ -59,7 +59,7 @@ public class UsersService {
         return usersRepository.findAll();
     }
 
-    // Lấy users cho trang quản lý admin (ẩn tài khoản ADMIN)
+    // Lấy users cho trang quản lý admin
     public List<Users> getUsersForAdminManagement() {
         return usersRepository.findAll().stream()
                 .filter(user -> !isAdmin(user))

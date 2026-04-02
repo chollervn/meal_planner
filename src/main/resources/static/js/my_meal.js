@@ -91,8 +91,10 @@ function setupDateSelectors() {
 }
 
 function syncControlsWithWeek() {
+  const focusDate = getWeekFocusDate(weekStart);
+
   if (yearSelect) {
-    const yearValue = String(weekStart.getFullYear());
+    const yearValue = String(focusDate.getFullYear());
     if (!yearSelect.querySelector(`option[value="${yearValue}"]`)) {
       const option = document.createElement('option');
       option.value = yearValue;
@@ -102,7 +104,7 @@ function syncControlsWithWeek() {
     yearSelect.value = yearValue;
   }
   if (monthSelect) {
-    monthSelect.value = String(weekStart.getMonth() + 1);
+    monthSelect.value = String(focusDate.getMonth() + 1);
   }
 }
 
@@ -117,7 +119,7 @@ async function jumpToSelectedMonthYear() {
     return;
   }
 
-  weekStart = getWeekStart(new Date(year, month - 1, 1));
+  weekStart = getWeekStartInSelectedMonth(year, month);
   syncControlsWithWeek();
   await renderCalendar();
 }
@@ -126,11 +128,36 @@ async function loadMeals() {
   try {
     const result = await ApiService.getMeals();
     if (result?.success && Array.isArray(result.data)) {
-      availableMeals = result.data;
+      availableMeals = await enrichMealsForSelector(result.data);
     }
   } catch (error) {
     availableMeals = [];
   }
+}
+
+async function enrichMealsForSelector(meals) {
+  const tasks = (meals || []).map(async (meal) => {
+    const normalizedMeal = {
+      ...meal,
+      calo: Number(meal?.calo ?? meal?.totalCalo ?? 0)
+    };
+
+    try {
+      const nutritionResult = await ApiService.getMealNutrition(normalizedMeal.idmf);
+      if (nutritionResult?.success && nutritionResult.data) {
+        return {
+          ...normalizedMeal,
+          calo: Number(nutritionResult.data.calories || 0)
+        };
+      }
+    } catch (error) {
+      // Keep fallback calories from meal payload
+    }
+
+    return normalizedMeal;
+  });
+
+  return Promise.all(tasks);
 }
 
 async function renderCalendar() {
@@ -196,11 +223,13 @@ function mapSchedule(scheduleItems) {
       return;
     }
 
+    const enrichedMeal = (availableMeals || []).find((candidate) => Number(candidate?.idmf) === Number(meal.idmf));
+
     map[dateKey] = {
       mealId: meal.idmf,
       name: meal.mealName,
       type: meal.type,
-      totalCalo: Math.round(meal.calo || 0),
+      totalCalo: Math.round(Number(enrichedMeal?.calo ?? meal.calo ?? 0)),
       breakfast: 'Xem chi tiết để xem danh sách món',
       lunch: 'Xem chi tiết để xem danh sách món',
       dinner: 'Xem chi tiết để xem danh sách món'
@@ -342,6 +371,21 @@ function getWeekStart(date) {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setHours(0, 0, 0, 0);
   return new Date(d.setDate(diff));
+}
+
+function getWeekFocusDate(startDate) {
+  return addDays(startDate, 3);
+}
+
+function getWeekStartInSelectedMonth(year, month) {
+  const firstDay = new Date(year, month - 1, 1);
+  firstDay.setHours(0, 0, 0, 0);
+
+  const day = firstDay.getDay();
+  const offsetToMonday = day === 0 ? 1 : (8 - day) % 7;
+  const firstMonday = addDays(firstDay, offsetToMonday);
+
+  return getWeekStart(firstMonday);
 }
 
 function formatDateKey(date) {

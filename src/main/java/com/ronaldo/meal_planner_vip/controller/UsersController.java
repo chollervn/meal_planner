@@ -84,12 +84,6 @@ public class UsersController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ảnh đại diện thành công!", usersService.toUserResponse(user)));
     }
 
-    // Xóa user
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Integer userId) {
-        usersService.deleteUser(userId);
-        return ResponseEntity.ok(ApiResponse.success("Xóa user thành công!", null));
-    }
 
     // Lấy BMI của user
     @GetMapping("/{userId}/bmi")
@@ -107,10 +101,5 @@ public class UsersController {
         return ResponseEntity.ok(ApiResponse.success(bmi));
     }
 
-    // Đếm tổng số users (cho admin)
-    @GetMapping("/count")
-    public ResponseEntity<ApiResponse<Long>> countUsers() {
-        long count = usersService.countUsers();
-        return ResponseEntity.ok(ApiResponse.success(count));
-    }
+
 }

@@ -125,4 +125,10 @@ public class MealController {
         boolean exists = mealTemplateService.checkMealExists(mealId);
         return ResponseEntity.ok(ApiResponse.success(exists));
     }
+
+    @PostMapping("/recalculate-nutrition")
+    public ResponseEntity<ApiResponse<Integer>> recalculateMealNutrition() {
+        int updatedCount = mealTemplateService.recalculateAllMealNutrition();
+        return ResponseEntity.ok(ApiResponse.success("Đã đồng bộ dinh dưỡng cho các meal", updatedCount));
+    }
 }
