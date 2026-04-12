@@ -142,7 +142,11 @@ function renderMealRows(meals) {
           <span>🥑 Béo: ${Math.round(meal.fat || 0)}g</span>
           <span>🍚 Carb: ${Math.round(meal.carb || 0)}g</span>
         </div>
-        <button class="view-btn" data-meal-id="${meal.idmf}">Xem chi tiết</button>
+        <div class="meal-actions">
+          <button class="view-btn" data-meal-id="${meal.idmf}">Xem chi tiết</button>
+          <button class="view-btn" data-edit-meal-id="${meal.idmf}">Chỉnh sửa</button>
+          <button class="view-btn" data-delete-meal-id="${meal.idmf}">Xóa</button>
+        </div>
       </div>
       <div class="meal-image">
         <img src="${meal.mealImage || '/images/anh1.jpg'}" alt="${meal.mealName || 'Meal'}">
@@ -153,6 +157,16 @@ function renderMealRows(meals) {
     button.addEventListener('click', () => {
       Storage.set('selectedMealId', meal.idmf);
       Navigation.navigate(`${Navigation.pages.mealDetail}?mealId=${meal.idmf}`);
+    });
+
+    const editButton = row.querySelector('[data-edit-meal-id]');
+    editButton?.addEventListener('click', () => {
+      Navigation.navigate(`${Navigation.pages.createMeal}?editMealId=${meal.idmf}`);
+    });
+
+    const deleteButton = row.querySelector('[data-delete-meal-id]');
+    deleteButton?.addEventListener('click', async () => {
+      await deleteMealFromList(meal.idmf, meal.mealName || 'thực đơn');
     });
 
     container.appendChild(row);
@@ -333,4 +347,33 @@ function normalizeText(value) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+async function deleteMealFromList(mealId, mealName) {
+  if (!mealId) {
+    return;
+  }
+
+  if (!confirm(`Bạn có chắc muốn xóa "${mealName}"?`)) {
+    return;
+  }
+
+  try {
+    const result = await ApiService.deleteMeal(mealId);
+    if (!result?.success) {
+      renderError(ApiService.getErrorText(result));
+      return;
+    }
+
+    availableMeals = (availableMeals || []).filter((meal) => Number(meal?.idmf) !== Number(mealId));
+    currentMealList = (currentMealList || []).filter((meal) => Number(meal?.idmf) !== Number(mealId));
+
+    if (!currentMealList.length && availableMeals.length) {
+      currentMealList = [...availableMeals];
+    }
+
+    renderMealRows(currentMealList);
+  } catch (error) {
+    renderError('Không thể xóa thực đơn. Vui lòng thử lại.');
+  }
 }

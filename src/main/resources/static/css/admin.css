@@ -136,6 +136,67 @@
   font-weight: 600;
 }
 
+.food-request-box {
+  margin-top: 28px;
+}
+
+.food-request-box h2 {
+  color: #9f1239;
+  margin: 0 0 12px;
+}
+
+.approve-btn,
+.reject-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.approve-btn {
+  background: #16a34a;
+  color: #fff;
+  margin-right: 6px;
+}
+
+.approve-btn:hover {
+  background: #15803d;
+}
+
+.reject-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.reject-btn:hover {
+  background: #dc2626;
+}
+
+.request-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.request-status-pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.request-status-approved {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.request-status-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .stats {

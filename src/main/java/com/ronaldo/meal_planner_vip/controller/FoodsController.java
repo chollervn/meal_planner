@@ -1,13 +1,18 @@
 package com.ronaldo.meal_planner_vip.controller;
 
 import com.ronaldo.meal_planner_vip.dto.ApiResponse;
+import com.ronaldo.meal_planner_vip.dto.FoodAdditionRequestResponse;
 import com.ronaldo.meal_planner_vip.dto.FoodRequest;
 import com.ronaldo.meal_planner_vip.dto.NutritionResponse;
 import com.ronaldo.meal_planner_vip.entity.Foods;
+import com.ronaldo.meal_planner_vip.exception.UnauthorizedException;
+import com.ronaldo.meal_planner_vip.service.FoodAdditionRequestService;
 import com.ronaldo.meal_planner_vip.service.FoodService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +22,9 @@ import java.util.List;
 public class FoodsController {
     @Autowired
     private FoodService foodService;
+
+    @Autowired
+    private FoodAdditionRequestService foodAdditionRequestService;
 
     // Tạo food mới
     @PostMapping
@@ -62,6 +70,22 @@ public class FoodsController {
         return ResponseEntity.ok(ApiResponse.success("Xóa food thành công!", null));
     }
 
+    // User gửi yêu cầu thêm food để admin duyệt
+    @PostMapping("/requests")
+    public ResponseEntity<ApiResponse<FoodAdditionRequestResponse>> createFoodRequest(@Valid @RequestBody FoodRequest request) {
+        Integer userId = getCurrentUserId();
+        FoodAdditionRequestResponse created = foodAdditionRequestService.submitRequest(request, userId);
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi yêu cầu thêm thực phẩm, vui lòng chờ admin duyệt", created));
+    }
+
+    // User xem trạng thái các yêu cầu của mình
+    @GetMapping("/requests/my")
+    public ResponseEntity<ApiResponse<List<FoodAdditionRequestResponse>>> getMyFoodRequests() {
+        Integer userId = getCurrentUserId();
+        List<FoodAdditionRequestResponse> requests = foodAdditionRequestService.getRequestsByUser(userId);
+        return ResponseEntity.ok(ApiResponse.success(requests));
+    }
+
     // Tính dinh dưỡng theo quantity
     @GetMapping("/{foodId}/nutrition")
     public ResponseEntity<ApiResponse<NutritionResponse>> calculateNutrition(
@@ -69,5 +93,23 @@ public class FoodsController {
             @RequestParam Float quantity) {
         NutritionResponse nutrition = foodService.calculateNutrition(foodId, quantity);
         return ResponseEntity.ok(ApiResponse.success(nutrition));
+    }
+
+    private Integer getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new UnauthorizedException("Không xác định được người dùng");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Integer) {
+            return (Integer) principal;
+        }
+
+        if (principal instanceof String principalText && principalText.matches("\\d+")) {
+            return Integer.valueOf(principalText);
+        }
+
+        throw new UnauthorizedException("Không xác định được người dùng");
     }
 }

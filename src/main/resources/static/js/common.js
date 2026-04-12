@@ -14,7 +14,8 @@ const Navigation = {
     mealPlans: '/meal_plans',
     createMeal: '/create_meal',
     mealDetail: '/meal_detail',
-    admin: '/admin'
+    admin: '/admin',
+    adminFoodRequests: '/admin_food_requests'
   },
 
   navigate(page) {
@@ -55,6 +56,8 @@ const Navigation = {
           this.navigate(this.pages.mealPlans);
         } else if (text.includes('Dashboard')) {
           this.navigate(this.pages.dashboard);
+        } else if (text.includes('Yêu cầu thực phẩm')) {
+          this.navigate(this.pages.adminFoodRequests);
         } else if (text.includes('Người dùng') || text.includes('Quản lý người dùng') || text.includes('Quản lí người dùng')) {
           this.navigate(this.pages.admin);
         } else if (text.trim() === 'Thực đơn') {
@@ -104,7 +107,11 @@ const Navigation = {
       links[1].textContent = 'Thực đơn mẫu';
     }
 
-    for (let i = links.length - 1; i >= 2; i -= 1) {
+    if (links[2]) {
+      links[2].textContent = 'Yêu cầu thực phẩm';
+    }
+
+    for (let i = links.length - 1; i >= 3; i -= 1) {
       links[i].remove();
     }
   },

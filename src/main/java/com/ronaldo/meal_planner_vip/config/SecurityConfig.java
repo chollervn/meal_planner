@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/create_meal",
                                 "/meal_detail",
                                 "/admin",
+                                "/admin_food_requests",
                                 "/error",
                                 "/auth/login",
                                 "/auth/register",
@@ -73,6 +74,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
                         .requestMatchers("/users/count").hasRole("ADMIN")
                         .requestMatchers("/users/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/foods").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/foods/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/foods/**").hasRole("ADMIN")
+                        .requestMatchers("/foods/requests/**").authenticated()
                         .requestMatchers("/foods/**", "/meals/**", "/schedules/**").authenticated()
                         .anyRequest().authenticated());
 

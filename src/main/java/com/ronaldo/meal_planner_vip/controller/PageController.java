@@ -45,4 +45,9 @@ public class PageController {
     public String admin() {
         return "adminUI";
     }
+
+    @GetMapping("/admin_food_requests")
+    public String adminFoodRequests() {
+        return "admin_food_requests";
+    }
 }

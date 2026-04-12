@@ -1,12 +1,17 @@
 package com.ronaldo.meal_planner_vip.controller;
 
 import com.ronaldo.meal_planner_vip.dto.ApiResponse;
+import com.ronaldo.meal_planner_vip.dto.FoodAdditionRequestResponse;
 import com.ronaldo.meal_planner_vip.dto.UserResponse;
 import com.ronaldo.meal_planner_vip.entity.Users;
+import com.ronaldo.meal_planner_vip.exception.UnauthorizedException;
+import com.ronaldo.meal_planner_vip.service.FoodAdditionRequestService;
 import com.ronaldo.meal_planner_vip.service.ScheduleService;
 import com.ronaldo.meal_planner_vip.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,6 +26,9 @@ public class AdminController {
 
     @Autowired
     private ScheduleService scheduleService;
+
+    @Autowired
+    private FoodAdditionRequestService foodAdditionRequestService;
 
     // Lấy danh sách tất cả users
     @GetMapping("/users")
@@ -75,5 +83,44 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Long>> countUsers() {
         long count = usersService.countNonAdminUsers();
         return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @GetMapping("/food-requests")
+    public ResponseEntity<ApiResponse<List<FoodAdditionRequestResponse>>> getFoodRequests(
+            @RequestParam(required = false) String status) {
+        List<FoodAdditionRequestResponse> requests = foodAdditionRequestService.getRequestsForAdmin(status);
+        return ResponseEntity.ok(ApiResponse.success(requests));
+    }
+
+    @PostMapping("/food-requests/{requestId}/approve")
+    public ResponseEntity<ApiResponse<FoodAdditionRequestResponse>> approveFoodRequest(@PathVariable Integer requestId) {
+        Integer adminUserId = getCurrentUserId();
+        FoodAdditionRequestResponse result = foodAdditionRequestService.approveRequest(requestId, adminUserId);
+        return ResponseEntity.ok(ApiResponse.success("Đã duyệt yêu cầu thêm thực phẩm", result));
+    }
+
+    @PostMapping("/food-requests/{requestId}/reject")
+    public ResponseEntity<ApiResponse<FoodAdditionRequestResponse>> rejectFoodRequest(@PathVariable Integer requestId) {
+        Integer adminUserId = getCurrentUserId();
+        FoodAdditionRequestResponse result = foodAdditionRequestService.rejectRequest(requestId, adminUserId);
+        return ResponseEntity.ok(ApiResponse.success("Đã từ chối yêu cầu thêm thực phẩm", result));
+    }
+
+    private Integer getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new UnauthorizedException("Không xác định được người dùng");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Integer) {
+            return (Integer) principal;
+        }
+
+        if (principal instanceof String principalText && principalText.matches("\\d+")) {
+            return Integer.valueOf(principalText);
+        }
+
+        throw new UnauthorizedException("Không xác định được người dùng");
     }
 }

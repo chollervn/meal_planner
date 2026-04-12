@@ -322,6 +322,63 @@
   color: #111827;
 }
 
+.my-food-requests-section {
+  margin-top: 18px;
+}
+
+.my-food-requests-section h4 {
+  margin-bottom: 8px;
+}
+
+.food-request-table-wrap {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #ffe4e6;
+  border-radius: 12px;
+}
+
+#myFoodRequestsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#myFoodRequestsTable th,
+#myFoodRequestsTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ffe4e6;
+  text-align: left;
+}
+
+#myFoodRequestsTable th {
+  position: sticky;
+  top: 0;
+  background: #fff1f2;
+}
+
+.request-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.request-status-pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.request-status-approved {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.request-status-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 968px) {
   .controls {

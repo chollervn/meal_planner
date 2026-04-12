@@ -29,7 +29,20 @@ async function loadAdminDashboard() {
   setupDetailModal();
   setupAdminSearchHandlers();
 
-  await Promise.all([loadStats(), loadUsers()]);
+  const tasks = [];
+  if (document.getElementById('statTotalUsers')) {
+    tasks.push(loadStats());
+  }
+  if (document.getElementById('adminUsersBody')) {
+    tasks.push(loadUsers());
+  }
+  if (document.getElementById('adminFoodRequestsBody')) {
+    tasks.push(loadFoodRequests());
+  }
+
+  if (tasks.length) {
+    await Promise.all(tasks);
+  }
 }
 
 function setupAdminSearchHandlers() {
@@ -137,6 +150,65 @@ async function loadUsers() {
     adminUsersCache = [];
     filteredAdminUsers = [];
     clearUsersPagination();
+  }
+}
+
+async function loadFoodRequests() {
+  const tbody = document.getElementById('adminFoodRequestsBody');
+  if (!tbody) {
+    return;
+  }
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Đang tải...</td></tr>';
+
+  try {
+    const result = await ApiService.getAdminFoodRequests();
+    const requests = result?.success && Array.isArray(result.data) ? result.data : [];
+
+    if (!requests.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Chưa có yêu cầu nào</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = requests.map((item) => {
+      const status = String(item.status || 'PENDING').toUpperCase();
+      const nutrition = `${Math.round(Number(item.calories || 0))} kcal | P ${Math.round(Number(item.protein || 0))} | F ${Math.round(Number(item.fat || 0))} | C ${Math.round(Number(item.carb || 0))} | Fi ${Math.round(Number(item.fiber || 0))}`;
+      const requestUser = `${escapeHtml(item.requestedByUsername || '-')}${item.requestedByEmail ? ` (${escapeHtml(item.requestedByEmail)})` : ''}`;
+      const actionButtons = status === 'PENDING'
+        ? `
+            <button class="approve-btn" data-approve-id="${item.requestId}">Chấp nhận</button>
+            <button class="reject-btn" data-reject-id="${item.requestId}">Từ chối</button>
+          `
+        : '-';
+
+      return `
+        <tr>
+          <td>${item.requestId ?? '-'}</td>
+          <td>${requestUser}</td>
+          <td>${escapeHtml(item.foodName || '-')}</td>
+          <td>${nutrition}</td>
+          <td><span class="request-status request-status-${status.toLowerCase()}">${toStatusText(status)}</span></td>
+          <td>${formatDateTime(item.requestedAt)}</td>
+          <td>${actionButtons}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('button[data-approve-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const requestId = Number(btn.getAttribute('data-approve-id'));
+        await approveFoodRequest(requestId);
+      });
+    });
+
+    tbody.querySelectorAll('button[data-reject-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const requestId = Number(btn.getAttribute('data-reject-id'));
+        await rejectFoodRequest(requestId);
+      });
+    });
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Tải yêu cầu thất bại</td></tr>';
   }
 }
 
@@ -329,6 +401,34 @@ async function deleteUser(userId) {
   await Promise.all([loadStats(), loadUsers()]);
 }
 
+async function approveFoodRequest(requestId) {
+  if (!confirm(`Duyệt yêu cầu #${requestId}?`)) {
+    return;
+  }
+
+  const result = await ApiService.approveFoodRequest(requestId);
+  if (!result?.success) {
+    alert(ApiService.getErrorText(result));
+    return;
+  }
+
+  await loadFoodRequests();
+}
+
+async function rejectFoodRequest(requestId) {
+  if (!confirm(`Từ chối yêu cầu #${requestId}?`)) {
+    return;
+  }
+
+  const result = await ApiService.rejectFoodRequest(requestId);
+  if (!result?.success) {
+    alert(ApiService.getErrorText(result));
+    return;
+  }
+
+  await loadFoodRequests();
+}
+
 async function viewUserDetail(userId) {
   const result = await ApiService.getAdminUserById(userId);
   if (!result?.success || !result.data) {
@@ -391,4 +491,23 @@ function normalizeText(value) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function toStatusText(status) {
+  if (status === 'APPROVED') return 'Đã duyệt';
+  if (status === 'REJECTED') return 'Từ chối';
+  return 'Chờ duyệt';
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleString('vi-VN');
 }

@@ -195,6 +195,17 @@
       });
     },
 
+    createFoodRequest(data) {
+      return request('/foods/requests', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+
+    getMyFoodRequests() {
+      return request('/foods/requests/my');
+    },
+
     async getFoodNutrition(foodId, quantity) {
       const result = await request(`/foods/${foodId}/nutrition${toQuery({ quantity })}`);
       if (result?.success) {
@@ -219,6 +230,19 @@
       return request('/meals', {
         method: 'POST',
         body: JSON.stringify(data)
+      });
+    },
+
+    updateMeal(mealId, data) {
+      return request(`/meals/${mealId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    },
+
+    deleteMeal(mealId) {
+      return request(`/meals/${mealId}`, {
+        method: 'DELETE'
       });
     },
 
@@ -311,6 +335,22 @@
     deleteAdminUser(userId) {
       return request(`/admin/users/${userId}`, {
         method: 'DELETE'
+      });
+    },
+
+    getAdminFoodRequests(status) {
+      return request(`/admin/food-requests${toQuery({ status })}`);
+    },
+
+    approveFoodRequest(requestId) {
+      return request(`/admin/food-requests/${requestId}/approve`, {
+        method: 'POST'
+      });
+    },
+
+    rejectFoodRequest(requestId) {
+      return request(`/admin/food-requests/${requestId}/reject`, {
+        method: 'POST'
       });
     },
 

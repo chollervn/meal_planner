@@ -7,6 +7,10 @@ let foods = [];
 let foodsLoaded = false;
 let selectedMealImageFile = null;
 let selectedMealImagePreviewUrl = null;
+let editingMealId = null;
+let isEditMode = false;
+let existingMealImageUrl = null;
+let myFoodRequests = [];
 const mealFoods = {
   breakfast: [],
   lunch: [],
@@ -21,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupMealImageUpload();
   setupSaveButton();
   await loadFoods();
+  await initializeEditMode();
   updateTargetCalories();
 });
 
@@ -173,11 +178,25 @@ function setupFoodLibrary() {
   const manageBtn = document.getElementById('manageFoodsBtn');
   const saveFoodBtn = document.getElementById('saveFoodBtn');
   const searchInput = document.getElementById('foodSearchInput');
+  const actionTitle = document.getElementById('foodLibraryActionTitle');
+
+  if (actionTitle) {
+    actionTitle.textContent = isCurrentUserAdmin() ? '➕ Thêm thực phẩm mới' : '📝 Gửi yêu cầu thêm thực phẩm';
+  }
+
+  if (saveFoodBtn) {
+    saveFoodBtn.textContent = isCurrentUserAdmin() ? 'Lưu thực phẩm' : 'Gửi yêu cầu duyệt';
+  }
+
+  toggleMyFoodRequestsSection();
 
   if (manageBtn) {
     manageBtn.addEventListener('click', () => {
       renderFoodLibrary(foods);
       Modal.open('foodLibraryModal');
+      if (!isCurrentUserAdmin()) {
+        loadMyFoodRequests();
+      }
     });
   }
 
@@ -196,6 +215,15 @@ function setupFoodLibrary() {
       await createFoodFromLibrary();
     });
   }
+}
+
+function toggleMyFoodRequestsSection() {
+  const section = document.getElementById('myFoodRequestsSection');
+  if (!section) {
+    return;
+  }
+
+  section.style.display = isCurrentUserAdmin() ? 'none' : 'block';
 }
 
 function renderFoodLibrary(list) {
@@ -225,6 +253,50 @@ function renderFoodLibrary(list) {
   });
 }
 
+async function loadMyFoodRequests() {
+  try {
+    const result = await ApiService.getMyFoodRequests();
+    if (result?.success && Array.isArray(result.data)) {
+      myFoodRequests = result.data;
+    } else {
+      myFoodRequests = [];
+    }
+  } catch (error) {
+    myFoodRequests = [];
+  }
+
+  renderMyFoodRequests(myFoodRequests);
+}
+
+function renderMyFoodRequests(list) {
+  const table = document.getElementById('myFoodRequestsTable');
+  if (!table) {
+    return;
+  }
+
+  table.querySelectorAll('tr:not(:first-child)').forEach((row) => row.remove());
+
+  const rows = Array.isArray(list) ? list : [];
+  if (!rows.length) {
+    const row = table.insertRow();
+    row.innerHTML = '<td colspan="4" style="text-align:center;">Chưa có yêu cầu nào</td>';
+    return;
+  }
+
+  rows.forEach((item) => {
+    const row = table.insertRow();
+    const statusText = mapFoodRequestStatus(item.status);
+    const nutritionText = `${Math.round(Number(item.calories || 0))} kcal | P ${Math.round(Number(item.protein || 0))} | F ${Math.round(Number(item.fat || 0))} | C ${Math.round(Number(item.carb || 0))}`;
+
+    row.innerHTML = `
+      <td>${item.foodName || '-'}</td>
+      <td>${nutritionText}</td>
+      <td><span class="request-status request-status-${String(item.status || '').toLowerCase()}">${statusText}</span></td>
+      <td>${formatRequestDateTime(item.requestedAt)}</td>
+    `;
+  });
+}
+
 async function createFoodFromLibrary() {
   const payload = {
     foodName: document.getElementById('newFoodName')?.value?.trim(),
@@ -246,18 +318,27 @@ async function createFoodFromLibrary() {
   }
 
   try {
-    const result = await ApiService.createFood(payload);
+    const isAdmin = isCurrentUserAdmin();
+    const result = isAdmin
+      ? await ApiService.createFood(payload)
+      : await ApiService.createFoodRequest(payload);
+
     if (!result?.success) {
       showApiAlert(result);
       return;
     }
 
     clearFoodLibraryForm();
-    await loadFoods(false);
-    renderFoodLibrary(foods);
-    alert('Đã thêm thực phẩm mới');
+    if (isAdmin) {
+      await loadFoods(false);
+      renderFoodLibrary(foods);
+      alert('Đã thêm thực phẩm mới');
+    } else {
+      await loadMyFoodRequests();
+      alert('Đã gửi yêu cầu thêm thực phẩm. Vui lòng chờ admin duyệt.');
+    }
   } catch (error) {
-    alert('Có lỗi khi thêm thực phẩm');
+    alert('Có lỗi khi gửi yêu cầu thực phẩm');
   }
 }
 
@@ -484,7 +565,7 @@ async function saveMealTemplate() {
     type: mealType,
     bmiMin: 0,
     bmiMax: 100,
-    mealImage: null,
+    mealImage: existingMealImageUrl,
     mealDetails: details.map((item) => ({
       foodId: item.foodId,
       quantity: item.grams,
@@ -493,7 +574,10 @@ async function saveMealTemplate() {
   };
 
   try {
-    const result = await ApiService.createMeal(payload);
+    const result = isEditMode
+      ? await ApiService.updateMeal(editingMealId, payload)
+      : await ApiService.createMeal(payload);
+
     if (!result?.success) {
       showApiAlert(result);
       return;
@@ -511,25 +595,150 @@ async function saveMealTemplate() {
       }
     }
 
+    existingMealImageUrl = savedMeal?.mealImage || existingMealImageUrl;
+
     const savedMeals = Storage.get('customMeals') || [];
-    savedMeals.push({
+    const savedMealEntry = {
       id: savedMeal?.idmf,
       name: savedMeal?.mealName || payload.mealName,
       totalCalo: Math.round(savedMeal?.calo || totalCalo),
-      mealImage: savedMeal?.mealImage || null,
+      mealImage: savedMeal?.mealImage || existingMealImageUrl || null,
       foods: details,
       createdAt: new Date().toISOString()
-    });
+    };
+
+    if (isEditMode) {
+      const index = savedMeals.findIndex((item) => Number(item?.id) === Number(savedMealEntry.id));
+      if (index >= 0) {
+        savedMeals[index] = savedMealEntry;
+      } else {
+        savedMeals.push(savedMealEntry);
+      }
+    } else {
+      savedMeals.push(savedMealEntry);
+    }
+
     Storage.set('customMeals', savedMeals);
 
     if (imageUploadFailed) {
-      alert('Lưu thực đơn thành công nhưng tải ảnh thất bại');
+      alert(isEditMode ? 'Cập nhật thực đơn thành công nhưng tải ảnh thất bại' : 'Lưu thực đơn thành công nhưng tải ảnh thất bại');
     } else {
-      alert('Lưu thực đơn thành công');
+      alert(isEditMode ? 'Cập nhật thực đơn thành công' : 'Lưu thực đơn thành công');
     }
-    Navigation.navigate(Navigation.pages.myMeal);
+    Navigation.navigate(isEditMode ? Navigation.pages.mealPlans : Navigation.pages.myMeal);
   } catch (error) {
-    alert('Có lỗi khi lưu thực đơn');
+    alert(isEditMode ? 'Có lỗi khi cập nhật thực đơn' : 'Có lỗi khi lưu thực đơn');
+  }
+}
+
+async function initializeEditMode() {
+  const mealId = getEditMealIdFromContext();
+  if (!mealId) {
+    applyCreateModeLabel();
+    return;
+  }
+
+  editingMealId = mealId;
+  isEditMode = true;
+  applyEditModeLabel();
+  await loadMealForEditing(mealId);
+}
+
+function getEditMealIdFromContext() {
+  const params = new URLSearchParams(window.location.search);
+  const mealIdFromQuery = Number(params.get('editMealId'));
+  if (mealIdFromQuery) {
+    return mealIdFromQuery;
+  }
+
+  return null;
+}
+
+function applyCreateModeLabel() {
+  const title = document.getElementById('createMealTitle');
+  const button = document.getElementById('saveMealTemplateBtn');
+  if (title) {
+    title.textContent = 'Tạo thực đơn theo sở thích';
+  }
+  if (button) {
+    button.textContent = '➕ Thêm vào thực đơn mẫu';
+  }
+}
+
+function applyEditModeLabel() {
+  const title = document.getElementById('createMealTitle');
+  const button = document.getElementById('saveMealTemplateBtn');
+  if (title) {
+    title.textContent = 'Chỉnh sửa thực đơn';
+  }
+  if (button) {
+    button.textContent = '💾 Lưu cập nhật thực đơn';
+  }
+}
+
+async function loadMealForEditing(mealId) {
+  try {
+    const [mealResult, detailsResult] = await Promise.all([
+      ApiService.getMealById(mealId),
+      ApiService.getMealDetails(mealId)
+    ]);
+
+    if (!mealResult?.success || !mealResult?.data) {
+      showApiAlert(mealResult);
+      return;
+    }
+
+    if (!detailsResult?.success || !Array.isArray(detailsResult.data)) {
+      showApiAlert(detailsResult);
+      return;
+    }
+
+    const meal = mealResult.data;
+    const details = detailsResult.data;
+
+    const mealNameInput = document.getElementById('mealNameInput');
+    if (mealNameInput) {
+      mealNameInput.value = meal.mealName || '';
+    }
+
+    existingMealImageUrl = meal.mealImage || null;
+    if (existingMealImageUrl) {
+      setMealImagePreviewFromUrl(existingMealImageUrl);
+    }
+
+    mealFoods.breakfast = [];
+    mealFoods.lunch = [];
+    mealFoods.dinner = [];
+
+    details.forEach((detail) => {
+      const targetKey = resolveMealKey(detail?.mealTime);
+      if (!targetKey) {
+        return;
+      }
+
+      const food = detail?.food || {};
+      const grams = toGrams(detail?.quantity);
+      const quantityStep = grams > 0 ? (grams / 100) : 0;
+      const ratio = grams / 100;
+
+      mealFoods[targetKey].push({
+        foodId: Number(food.foodId || detail?.id?.foodId),
+        name: food.foodName || 'Thực phẩm',
+        quantity: quantityStep,
+        grams,
+        calories: Math.round(Number(food.calories || 0) * ratio),
+        protein: Number(food.protein || 0) * ratio,
+        fat: Number(food.fat || 0) * ratio,
+        carb: Number(food.carb || 0) * ratio,
+        fiber: Number(food.fiber || 0) * ratio,
+        mealTime: targetKey.toUpperCase()
+      });
+    });
+
+    renderCurrentMealRows();
+    updateTargetCalories();
+  } catch (error) {
+    alert('Không tải được dữ liệu thực đơn để chỉnh sửa');
   }
 }
 
@@ -561,11 +770,80 @@ function formatQuantityStep(quantityStep) {
   return `${grams}g`;
 }
 
+function setMealImagePreviewFromUrl(imageUrl) {
+  const preview = document.getElementById('mealImagePreview');
+  const fileName = document.getElementById('mealImageFileName');
+
+  if (selectedMealImagePreviewUrl) {
+    URL.revokeObjectURL(selectedMealImagePreviewUrl);
+    selectedMealImagePreviewUrl = null;
+  }
+
+  if (preview && imageUrl) {
+    preview.src = imageUrl;
+  }
+
+  if (fileName && imageUrl) {
+    const parts = String(imageUrl).split('/');
+    fileName.textContent = parts[parts.length - 1] || 'Ảnh hiện tại';
+  }
+}
+
+function resolveMealKey(mealTime) {
+  const value = String(mealTime || '').toUpperCase();
+  if (value === 'BREAKFAST') return 'breakfast';
+  if (value === 'LUNCH') return 'lunch';
+  if (value === 'DINNER') return 'dinner';
+  return null;
+}
+
+function toGrams(quantity) {
+  const num = Number(quantity || 0);
+  if (!num || Number.isNaN(num)) {
+    return 0;
+  }
+
+  if (num > 0 && num <= 20) {
+    return num * 100;
+  }
+
+  return num;
+}
+
 function normalizeText(value) {
   return (value || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+function isCurrentUserAdmin() {
+  const user = Storage.get('user');
+  return String(user?.role || '').toUpperCase() === 'ADMIN';
+}
+
+function mapFoodRequestStatus(status) {
+  const normalized = String(status || '').toUpperCase();
+  if (normalized === 'APPROVED') {
+    return 'Đã duyệt';
+  }
+  if (normalized === 'REJECTED') {
+    return 'Từ chối';
+  }
+  return 'Chờ duyệt';
+}
+
+function formatRequestDateTime(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '-';
+  }
+
+  return parsed.toLocaleString('vi-VN');
 }
 
 function showApiAlert(payload) {

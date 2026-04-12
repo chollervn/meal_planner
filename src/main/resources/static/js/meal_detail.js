@@ -78,6 +78,10 @@ function renderMealDetail(container, meal, details, totalNutrition) {
   const totals = computedTotals;
 
   container.innerHTML = `
+    <div class="meal-detail-actions" style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px;">
+      <button type="button" class="detail-btn" id="editMealBtn">Chỉnh sửa</button>
+      <button type="button" class="detail-btn" id="deleteMealBtn">Xóa</button>
+    </div>
     <h1 style="margin-bottom:16px;">${escapeHtml(meal.mealName || 'Chi tiết thực đơn')}</h1>
     ${details.length === 0 ? '<p>Thực đơn này chưa có chi tiết món ăn.</p>' : ''}
     ${breakfastBlock}
@@ -93,6 +97,8 @@ function renderMealDetail(container, meal, details, totalNutrition) {
       </div>
     </div>
   `;
+
+  bindMealDetailActions(meal);
 }
 
 function buildMealBlock(title, items) {
@@ -236,4 +242,40 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function bindMealDetailActions(meal) {
+  const mealId = Number(meal?.idmf || getMealIdFromContext());
+  const editBtn = document.getElementById('editMealBtn');
+  const deleteBtn = document.getElementById('deleteMealBtn');
+
+  editBtn?.addEventListener('click', () => {
+    if (!mealId) {
+      return;
+    }
+    Navigation.navigate(`${Navigation.pages.createMeal}?editMealId=${mealId}`);
+  });
+
+  deleteBtn?.addEventListener('click', async () => {
+    if (!mealId) {
+      return;
+    }
+
+    const mealName = String(meal?.mealName || 'thực đơn');
+    if (!confirm(`Bạn có chắc muốn xóa "${mealName}"?`)) {
+      return;
+    }
+
+    try {
+      const result = await ApiService.deleteMeal(mealId);
+      if (!result?.success) {
+        alert(ApiService.getErrorText(result));
+        return;
+      }
+
+      Navigation.navigate(Navigation.pages.mealPlans);
+    } catch (error) {
+      alert('Không thể xóa thực đơn. Vui lòng thử lại.');
+    }
+  });
 }
