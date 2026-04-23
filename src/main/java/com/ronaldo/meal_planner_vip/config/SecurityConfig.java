@@ -54,6 +54,7 @@ public class SecurityConfig {
                                 "/meal_detail",
                                 "/admin",
                                 "/admin_food_requests",
+                                "/admin_food_stats",
                                 "/error",
                                 "/auth/login",
                                 "/auth/register",

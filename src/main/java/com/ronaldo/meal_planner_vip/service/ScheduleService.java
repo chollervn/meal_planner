@@ -1,5 +1,8 @@
 package com.ronaldo.meal_planner_vip.service;
 
+import com.ronaldo.meal_planner_vip.dto.FoodUsageStatResponse;
+import com.ronaldo.meal_planner_vip.dto.FoodUsageStatsPageResponse;
+import com.ronaldo.meal_planner_vip.dto.MealUsageStatResponse;
 import com.ronaldo.meal_planner_vip.dto.ScheduleMealRequest;
 import com.ronaldo.meal_planner_vip.entity.*;
 import com.ronaldo.meal_planner_vip.exception.ResourceNotFoundException;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.DayOfWeek;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,5 +139,106 @@ public class ScheduleService {
         LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
         LocalDate endOfWeek = startOfWeek.plusDays(6);
         return scheduleMealRepository.countActiveUsersByDateRange(startOfWeek, endOfWeek);
+    }
+
+    public FoodUsageStatsPageResponse getTopUsedFoodsWithTopMeals(int page, int pageSize, int mealLimit) {
+        List<Object[]> rawFoods = scheduleMealRepository.findMostUsedFoods();
+        List<Object[]> validRows = new ArrayList<>();
+
+        for (Object[] row : rawFoods) {
+            if (row == null || row.length < 3) {
+                continue;
+            }
+            if (toInteger(row[0]) == null) {
+                continue;
+            }
+            validRows.add(row);
+        }
+
+        int safePage = Math.max(1, page);
+        int safePageSize = Math.max(1, pageSize);
+        List<FoodUsageStatResponse> topFoods = new ArrayList<>();
+        long totalItems = validRows.size();
+        int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / safePageSize);
+
+        int maxMeals = Math.max(1, mealLimit);
+        if (totalItems == 0) {
+            return new FoodUsageStatsPageResponse(topFoods, safePage, safePageSize, 0L, 0);
+        }
+
+        if (safePage > totalPages) {
+            safePage = totalPages;
+        }
+
+        int start = (safePage - 1) * safePageSize;
+        int end = Math.min(start + safePageSize, validRows.size());
+
+        for (int index = start; index < end; index++) {
+            Object[] row = validRows.get(index);
+            Integer foodId = toInteger(row[0]);
+
+            FoodUsageStatResponse item = new FoodUsageStatResponse(
+                    foodId,
+                    toStringValue(row[1]),
+                    toLong(row[2])
+            );
+
+            List<Object[]> rawMeals = scheduleMealRepository.findTopMealsContainingFood(foodId);
+            List<MealUsageStatResponse> topMeals = new ArrayList<>();
+
+            for (Object[] mealRow : rawMeals) {
+                if (mealRow == null || mealRow.length < 3) {
+                    continue;
+                }
+
+                MealUsageStatResponse mealUsage = new MealUsageStatResponse(
+                        toInteger(mealRow[0]),
+                        toStringValue(mealRow[1]),
+                        toLong(mealRow[2])
+                );
+                topMeals.add(mealUsage);
+
+                if (topMeals.size() >= maxMeals) {
+                    break;
+                }
+            }
+
+            item.setTopMeals(topMeals);
+            topFoods.add(item);
+        }
+
+        return new FoodUsageStatsPageResponse(topFoods, safePage, safePageSize, totalItems, totalPages);
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException exception) {
+            return 0L;
+        }
+    }
+
+    private String toStringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 }

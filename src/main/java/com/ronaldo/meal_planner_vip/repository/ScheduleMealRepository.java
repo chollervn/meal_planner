@@ -41,4 +41,22 @@ public interface ScheduleMealRepository extends JpaRepository<ScheduleMeal, Sche
             "AND UPPER(COALESCE(sm.schedule.user.role, 'USER')) <> 'ADMIN'")
     long countActiveUsersByDateRange(@Param("startDate") LocalDate startDate,
                                      @Param("endDate") LocalDate endDate);
+
+    @Query(value = "SELECT md.food_id AS foodId, f.food_name AS foodName, COUNT(*) AS usageCount " +
+            "FROM schedule_meal sm " +
+            "JOIN (SELECT DISTINCT idmf, food_id FROM meal_details) md ON md.idmf = sm.idmf " +
+            "JOIN foods f ON f.food_id = md.food_id " +
+            "GROUP BY md.food_id, f.food_name " +
+            "ORDER BY usageCount DESC, md.food_id ASC",
+            nativeQuery = true)
+    List<Object[]> findMostUsedFoods();
+
+    @Query(value = "SELECT sm.idmf AS mealId, mt.meal_name AS mealName, COUNT(*) AS usageCount " +
+            "FROM schedule_meal sm " +
+            "JOIN meal_template mt ON mt.idmf = sm.idmf " +
+            "WHERE sm.idmf IN (SELECT DISTINCT md.idmf FROM meal_details md WHERE md.food_id = :foodId) " +
+            "GROUP BY sm.idmf, mt.meal_name " +
+            "ORDER BY usageCount DESC, sm.idmf ASC",
+            nativeQuery = true)
+    List<Object[]> findTopMealsContainingFood(@Param("foodId") Integer foodId);
 }

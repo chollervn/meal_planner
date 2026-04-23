@@ -332,6 +332,10 @@
       return request('/admin/stats');
     },
 
+    getAdminFoodStats(page, pageSize, mealLimit) {
+      return request(`/admin/stats/foods${toQuery({ page, pageSize, mealLimit })}`);
+    },
+
     deleteAdminUser(userId) {
       return request(`/admin/users/${userId}`, {
         method: 'DELETE'

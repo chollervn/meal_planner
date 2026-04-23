@@ -140,6 +140,41 @@
   margin-top: 28px;
 }
 
+.top-foods-box {
+  margin-bottom: 28px;
+}
+
+.top-foods-box h2 {
+  color: #9f1239;
+  margin: 0 0 12px;
+}
+
+.meal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meal-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #ffe4e6;
+  color: #9f1239;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meal-tag-link {
+  border: none;
+  cursor: pointer;
+}
+
+.meal-tag-link:hover {
+  background: #fecdd3;
+}
+
 .food-request-box h2 {
   color: #9f1239;
   margin: 0 0 12px;

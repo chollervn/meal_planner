@@ -1,6 +1,7 @@
 package com.ronaldo.meal_planner_vip.controller;
 
 import com.ronaldo.meal_planner_vip.dto.ApiResponse;
+import com.ronaldo.meal_planner_vip.dto.FoodUsageStatsPageResponse;
 import com.ronaldo.meal_planner_vip.dto.FoodAdditionRequestResponse;
 import com.ronaldo.meal_planner_vip.dto.UserResponse;
 import com.ronaldo.meal_planner_vip.entity.Users;
@@ -75,6 +76,18 @@ public class AdminController {
     @GetMapping("/stats/meals")
     public ResponseEntity<ApiResponse<List<Object[]>>> getMostUsedMeals() {
         List<Object[]> stats = scheduleService.getMostUsedMealsWithName();
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/stats/foods")
+    public ResponseEntity<ApiResponse<FoodUsageStatsPageResponse>> getMostUsedFoods(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(defaultValue = "3") Integer mealLimit) {
+        int safePage = Math.max(page == null ? 1 : page, 1);
+        int safePageSize = Math.min(Math.max(pageSize == null ? 10 : pageSize, 1), 10);
+        int safeMealLimit = Math.min(Math.max(mealLimit == null ? 3 : mealLimit, 1), 10);
+        FoodUsageStatsPageResponse stats = scheduleService.getTopUsedFoodsWithTopMeals(safePage, safePageSize, safeMealLimit);
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 

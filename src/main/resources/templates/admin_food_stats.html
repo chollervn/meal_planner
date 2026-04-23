@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Yêu cầu thực phẩm</title>
+    <title>Admin - Thống kê thực phẩm</title>
     <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/admin.css">
 </head>
@@ -22,22 +22,20 @@
 </div>
 
 <div class="container">
-    <h1>📨 Danh sách yêu cầu thêm thực phẩm</h1>
+    <h1>🥗 Thống kê thực phẩm được sử dụng nhiều nhất</h1>
 
-    <div class="table-box food-request-box">
+    <div class="table-box top-foods-box">
+        <h2>Top thực phẩm theo lượt áp dụng thực đơn</h2>
         <table>
             <tr>
-                <th>ID</th>
-                <th>User gửi</th>
-                <th>Tên thực phẩm</th>
-                <th>Dinh dưỡng/100g</th>
-                <th>Trạng thái</th>
-                <th>Thời gian gửi</th>
-                <th>Thao tác</th>
+                <th>#</th>
+                <th>Thực phẩm</th>
+                <th>Lượt sử dụng</th>
+                <th>Thuộc thực đơn dùng nhiều</th>
             </tr>
-            <tbody id="adminFoodRequestsBody">
+            <tbody id="adminTopFoodsBody">
             <tr>
-                <td colspan="7" style="text-align:center;">Đang tải...</td>
+                <td colspan="4" style="text-align:center;">Đang tải...</td>
             </tr>
             </tbody>
         </table>

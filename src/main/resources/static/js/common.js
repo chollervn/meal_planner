@@ -15,6 +15,7 @@ const Navigation = {
     createMeal: '/create_meal',
     mealDetail: '/meal_detail',
     admin: '/admin',
+    adminFoodStats: '/admin_food_stats',
     adminFoodRequests: '/admin_food_requests'
   },
 
@@ -54,6 +55,8 @@ const Navigation = {
           this.navigate(this.pages.myMeal);
         } else if (text.includes('Thực đơn mẫu')) {
           this.navigate(this.pages.mealPlans);
+        } else if (text.includes('Thống kê thực phẩm')) {
+          this.navigate(this.pages.adminFoodStats);
         } else if (text.includes('Dashboard')) {
           this.navigate(this.pages.dashboard);
         } else if (text.includes('Yêu cầu thực phẩm')) {
@@ -94,26 +97,30 @@ const Navigation = {
       return;
     }
 
-    const links = Array.from(document.querySelectorAll('.nav-menu a:not(.logout)'));
-    if (!links.length) {
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) {
       return;
     }
 
-    if (links[0]) {
-      links[0].textContent = 'Quản lý người dùng';
-    }
+    const logoutLink = navMenu.querySelector('.logout');
+    navMenu.querySelectorAll('a:not(.logout)').forEach((link) => link.remove());
 
-    if (links[1]) {
-      links[1].textContent = 'Thực đơn mẫu';
-    }
+    const adminItems = [
+      'Quản lý người dùng',
+      'Thống kê thực phẩm',
+      'Thực đơn mẫu',
+      'Yêu cầu thực phẩm'
+    ];
 
-    if (links[2]) {
-      links[2].textContent = 'Yêu cầu thực phẩm';
-    }
-
-    for (let i = links.length - 1; i >= 3; i -= 1) {
-      links[i].remove();
-    }
+    adminItems.forEach((label) => {
+      const link = document.createElement('a');
+      link.textContent = label;
+      if (logoutLink) {
+        navMenu.insertBefore(link, logoutLink);
+      } else {
+        navMenu.appendChild(link);
+      }
+    });
   },
 
   async logout() {

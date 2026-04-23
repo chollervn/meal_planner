@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const USERS_PER_PAGE = 5;
+const TOP_FOODS_PER_PAGE = 10;
 let currentUserPage = 1;
+let currentTopFoodsPage = 1;
 let adminUsersCache = [];
 let filteredAdminUsers = [];
 let adminSearchDebounceTimer = null;
@@ -35,6 +37,10 @@ async function loadAdminDashboard() {
   }
   if (document.getElementById('adminUsersBody')) {
     tasks.push(loadUsers());
+  }
+  if (document.getElementById('adminTopFoodsBody')) {
+    currentTopFoodsPage = 1;
+    tasks.push(loadTopFoodsStats(currentTopFoodsPage));
   }
   if (document.getElementById('adminFoodRequestsBody')) {
     tasks.push(loadFoodRequests());
@@ -150,6 +156,65 @@ async function loadUsers() {
     adminUsersCache = [];
     filteredAdminUsers = [];
     clearUsersPagination();
+  }
+}
+
+async function loadTopFoodsStats(page) {
+  const tbody = document.getElementById('adminTopFoodsBody');
+  if (!tbody) {
+    return;
+  }
+
+  const targetPage = Math.max(1, Number(page || currentTopFoodsPage || 1));
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Đang tải...</td></tr>';
+
+  try {
+    const result = await ApiService.getAdminFoodStats(targetPage, TOP_FOODS_PER_PAGE, 3);
+    const data = result?.success && result?.data ? result.data : null;
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const pageNumber = Math.max(1, Number(data?.page || targetPage));
+    const totalPages = Math.max(0, Number(data?.totalPages || 0));
+    const totalItems = Math.max(0, Number(data?.totalItems || 0));
+    currentTopFoodsPage = pageNumber;
+
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Chưa có dữ liệu</td></tr>';
+      clearTopFoodsPagination();
+      return;
+    }
+
+    const rankStart = (pageNumber - 1) * TOP_FOODS_PER_PAGE;
+
+    tbody.innerHTML = items.map((item, index) => {
+      const topMeals = Array.isArray(item?.topMeals) ? item.topMeals : [];
+      const topMealHtml = topMeals.length
+        ? `<div class="meal-tags">${topMeals.map((meal) => {
+            const mealName = meal?.mealName || `Meal #${meal?.mealId ?? '-'}`;
+            const usageCount = Number(meal?.usageCount ?? 0);
+            const mealId = Number(meal?.mealId || 0);
+            if (!mealId) {
+              return `<span class="meal-tag">${escapeHtml(mealName)} (${usageCount})</span>`;
+            }
+            return `<button type="button" class="meal-tag meal-tag-link" data-top-meal-id="${mealId}">${escapeHtml(mealName)} (${usageCount})</button>`;
+          }).join('')}</div>`
+        : '-';
+
+      return `
+        <tr>
+          <td>${rankStart + index + 1}</td>
+          <td>${escapeHtml(item?.foodName || '-')}</td>
+          <td>${Number(item?.usageCount ?? 0)}</td>
+          <td>${topMealHtml}</td>
+        </tr>
+      `;
+    }).join('');
+
+    bindTopMealDetailLinks(tbody);
+
+    renderTopFoodsPagination(pageNumber, totalPages, totalItems);
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tải dữ liệu thất bại</td></tr>';
+    clearTopFoodsPagination();
   }
 }
 
@@ -337,6 +402,68 @@ function clearUsersPagination() {
   if (pagination) {
     pagination.innerHTML = '';
   }
+}
+
+function renderTopFoodsPagination(currentPage, totalPages, totalItems) {
+  const tableBox = document.querySelector('.top-foods-box');
+  if (!tableBox) {
+    return;
+  }
+
+  let pagination = document.getElementById('adminTopFoodsPagination');
+  if (!pagination) {
+    pagination = document.createElement('div');
+    pagination.id = 'adminTopFoodsPagination';
+    pagination.className = 'pagination-bar';
+    tableBox.appendChild(pagination);
+  }
+
+  if (totalPages <= 1 || totalItems <= TOP_FOODS_PER_PAGE) {
+    pagination.innerHTML = '';
+    return;
+  }
+
+  pagination.innerHTML = `
+    <button type="button" class="page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>← Trước</button>
+    <span class="page-info">Trang ${currentPage}/${totalPages}</span>
+    <button type="button" class="page-btn" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>Sau →</button>
+  `;
+
+  const prevBtn = pagination.querySelector('[data-page="prev"]');
+  const nextBtn = pagination.querySelector('[data-page="next"]');
+
+  prevBtn?.addEventListener('click', async () => {
+    if (currentPage > 1) {
+      await loadTopFoodsStats(currentPage - 1);
+    }
+  });
+
+  nextBtn?.addEventListener('click', async () => {
+    if (currentPage < totalPages) {
+      await loadTopFoodsStats(currentPage + 1);
+    }
+  });
+}
+
+function clearTopFoodsPagination() {
+  const pagination = document.getElementById('adminTopFoodsPagination');
+  if (pagination) {
+    pagination.innerHTML = '';
+  }
+}
+
+function bindTopMealDetailLinks(container) {
+  container.querySelectorAll('button[data-top-meal-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const mealId = Number(button.getAttribute('data-top-meal-id'));
+      if (!mealId) {
+        return;
+      }
+
+      Storage.set('selectedMealId', mealId);
+      Navigation.navigate(`${Navigation.pages.mealDetail}?mealId=${mealId}`);
+    });
+  });
 }
 
 async function hydrateUserMealUsage(users) {
